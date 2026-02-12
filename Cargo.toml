@@ -1,0 +1,20 @@
+[package]
+name = "compiler"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.5", features = ["derive"] }
+thiserror = "1.0"
+anyhow = "1.0"
+
+[dev-dependencies]
+pretty_assertions = "1.4"
+
+[[bin]]
+name = "compiler"
+path = "src/main.rs"
+
+[[test]]
+name = "lexer_tests"
+path = "tests/lexer_tests.rs"
