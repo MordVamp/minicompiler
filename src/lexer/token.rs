@@ -1,67 +1,19 @@
 use std::fmt;
 
-// -----------------------------------------------------------------------------
-// TokenType: enumeration of all possible token kinds.
-// -----------------------------------------------------------------------------
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TokenType {
     // Keywords
-    If,
-    Else,
-    While,
-    For,
-    Int,
-    Float,
-    Bool,
-    Return,
-    True,
-    False,
-    Void,
-    Struct,
-    Fn,
-
+    If, Else, While, For, Int, Float, Bool, Return, True, False, Void, Struct, Fn,
     // Literals
-    Identifier,
-    IntLiteral,
-    FloatLiteral,
-    StringLiteral,
-    BoolLiteral,
-
-    // Operators (single & multi-character)
-    Plus,
-    Minus,
-    Star,
-    Slash,
-    Percent,
-    Equal,
-    EqualEqual,
-    NotEqual,
-    Less,
-    LessEqual,
-    Greater,
-    GreaterEqual,
-    AndAnd,
-    OrOr,
-    Bang,
-    PlusEqual,
-    MinusEqual,
-    StarEqual,
-    SlashEqual,
-
+    Identifier, IntLiteral, FloatLiteral, StringLiteral, BoolLiteral,
+    // Operators
+    Plus, Minus, Star, Slash, Percent, Equal, EqualEqual, NotEqual,
+    Less, LessEqual, Greater, GreaterEqual, AndAnd, OrOr, Bang,
+    PlusEqual, MinusEqual, StarEqual, SlashEqual,
     // Delimiters
-    LParen,
-    RParen,
-    LBrace,
-    RBrace,
-    LBracket,
-    RBracket,
-    Semicolon,
-    Comma,
-    Colon,
-
+    LParen, RParen, LBrace, RBrace, LBracket, RBracket, Semicolon, Comma, Colon,
     // Special
-    EndOfFile,
-    Error,
+    EndOfFile, Error,
 }
 
 impl fmt::Display for TokenType {
@@ -70,9 +22,6 @@ impl fmt::Display for TokenType {
     }
 }
 
-// -----------------------------------------------------------------------------
-// LiteralValue: a discriminated union for literal values extracted from source.
-// -----------------------------------------------------------------------------
 #[derive(Debug, Clone, PartialEq)]
 pub enum LiteralValue {
     Integer(i64),
@@ -94,9 +43,6 @@ impl fmt::Display for LiteralValue {
     }
 }
 
-// -----------------------------------------------------------------------------
-// Token: unit of output from the scanner.
-// -----------------------------------------------------------------------------
 #[derive(Debug, Clone, PartialEq)]
 pub struct Token {
     pub token_type: TokenType,
@@ -133,13 +79,7 @@ impl Token {
     }
 
     pub fn error(lexeme: impl Into<String>, line: usize, column: usize) -> Self {
-        Self::new(
-            TokenType::Error,
-            lexeme,
-            line,
-            column,
-            LiteralValue::None,
-        )
+        Self::new(TokenType::Error, lexeme, line, column, LiteralValue::None)
     }
 }
 

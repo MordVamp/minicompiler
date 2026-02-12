@@ -1,4 +1,4 @@
-use compiler::lexer::{LiteralValue, Scanner, Token, TokenType}; // Note: crate name is "compiler"
+use lexer::{LiteralValue, Scanner, Token, TokenType}; 
 use pretty_assertions::assert_eq;
 
 fn tokenize(source: &str) -> Vec<Token> {

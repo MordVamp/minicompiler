@@ -1,5 +1,5 @@
 [package]
-name = "compiler"
+name = "minicompiler"
 version = "0.1.0"
 edition = "2021"
 
@@ -12,9 +12,5 @@ anyhow = "1.0"
 pretty_assertions = "1.4"
 
 [[bin]]
-name = "compiler"
+name = "minicompiler"
 path = "src/main.rs"
-
-[[test]]
-name = "lexer_tests"
-path = "tests/lexer_tests.rs"

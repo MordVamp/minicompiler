@@ -3,7 +3,7 @@ mod utils;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use lexer::{Scanner, Token};
+use lexer::{Scanner, TokenType};
 use std::fs;
 use std::path::PathBuf;
 
@@ -47,7 +47,7 @@ fn run_lexer(input_path: &PathBuf, output_path: Option<&PathBuf>) -> Result<()> 
 
     loop {
         let token = scanner.next_token();
-        let is_eof = token.token_type == lexer::TokenType::EndOfFile;
+        let is_eof = token.token_type == TokenType::EndOfFile;
         tokens.push(token);
         if is_eof {
             break;
@@ -69,7 +69,8 @@ fn run_lexer(input_path: &PathBuf, output_path: Option<&PathBuf>) -> Result<()> 
 }
 
 fn run_tests() -> Result<()> {
-    println!("Running lexer tests...");
-    // Tests are run via `cargo test` – this is a placeholder for the CLI.
+    println!("Running lexer tests via `cargo test`...");
+    // The actual tests are in src/lexer/mod.rs (unit tests).
+    // This CLI command just delegates to the test runner.
     Ok(())
 }

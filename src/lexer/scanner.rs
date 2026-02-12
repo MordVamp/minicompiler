@@ -14,10 +14,6 @@ pub struct Scanner<'a> {
     keywords: HashMap<&'static str, TokenType>,
 }
 
-// -------------------------------------------------------------------------
-// Helper struct for saving/restoring scanner state (peek_token support)
-// We store byte offsets and position, NOT the iterator itself.
-// -------------------------------------------------------------------------
 struct ScannerState {
     start: usize,
     current: usize,
@@ -404,9 +400,6 @@ impl<'a> Scanner<'a> {
         )
     }
 
-    // -------------------------------------------------------------------------
-    // Snapshot/restore for lookahead – now using byte offsets
-    // -------------------------------------------------------------------------
     fn save(&self) -> ScannerState {
         ScannerState {
             start: self.start,
@@ -421,7 +414,6 @@ impl<'a> Scanner<'a> {
         self.current = state.current;
         self.line = state.line;
         self.column = state.column;
-        // Recreate the iterator from the source at the saved byte offset.
         self.chars = self.source[self.current..].chars().peekable();
     }
 }
