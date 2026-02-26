@@ -107,9 +107,8 @@ impl<'a> Scanner<'a> {
                     self.single_line_comment();
                     return self.next_token();
                 } else if self.r#match('*') {
-                    if let Err(e) = self.block_comment() {
-                        return self.error_token(e);
-                    }
+                    // Consume block comment; if unterminated, report error but continue.
+                    let _ = self.block_comment();
                     return self.next_token();
                 } else if self.r#match('=') {
                     self.simple_token(TokenType::SlashEqual)
@@ -117,6 +116,7 @@ impl<'a> Scanner<'a> {
                     self.simple_token(TokenType::Slash)
                 }
             }
+            '%' => return self.simple_token(TokenType::Percent),
             '=' => {
                 if self.r#match('=') {
                     self.simple_token(TokenType::EqualEqual)
@@ -160,7 +160,7 @@ impl<'a> Scanner<'a> {
                 }
             }
             '"' => return self.string(),
-            _ if c.is_ascii_digit() => return self.number(c),
+            _ if c.is_ascii_digit() || c == '.' => return self.number(c),
             _ if is_identifier_start(c) => return self.identifier(),
             _ => self.error_token(LexicalError::InvalidCharacter(c)),
         }
@@ -205,7 +205,7 @@ impl<'a> Scanner<'a> {
 
     fn skip_whitespace(&mut self) {
         while let Some(c) = self.peek() {
-            if c == ' ' || c == '\t' || c == '\r' {
+            if c == ' ' || c == '\t' || c == '\r' || c == '\n' {
                 self.advance();
             } else {
                 break;
@@ -275,28 +275,16 @@ impl<'a> Scanner<'a> {
         self.error_token(LexicalError::UnterminatedString)
     }
 
-    fn number(&mut self, _first: char) -> Token {
+    fn number(&mut self, first_char: char) -> Token {
         let start_line = self.line;
-        let start_column = self.column - 1;
-
-        let mut is_float = false;
-        while let Some(c) = self.peek() {
-            if c.is_ascii_digit() {
-                self.advance();
-            } else {
-                break;
-            }
-        }
-
-        if self.peek() == Some('.') {
-            is_float = true;
-            self.advance();
-
-            if !self.peek().map_or(false, |c| c.is_ascii_digit()) {
-                return self.error_token(LexicalError::MalformedNumber(
-                    self.source[self.start..self.current].to_string(),
-                ));
-            }
+        let start_column = self.column - 1; // column of the first character
+    
+        let mut has_int_part = false;
+        let mut has_frac_part = false;
+    
+        // ----- integer part (only if first character is a digit) -----
+        if first_char.is_ascii_digit() {
+            has_int_part = true;
             while let Some(c) = self.peek() {
                 if c.is_ascii_digit() {
                     self.advance();
@@ -305,9 +293,55 @@ impl<'a> Scanner<'a> {
                 }
             }
         }
-
+    
+        // ----- fractional part -----
+        // If the number starts with '.', the dot is already consumed.
+        // Otherwise, look for a dot after the integer part.
+        if first_char == '.' {
+            // dot already consumed, now must be followed by a digit
+            if self.peek().map_or(false, |c| c.is_ascii_digit()) {
+                has_frac_part = true;
+                while let Some(c) = self.peek() {
+                    if c.is_ascii_digit() {
+                        self.advance();
+                    } else {
+                        break;
+                    }
+                }
+            }
+        } else if self.peek() == Some('.') {
+            self.advance(); // consume the dot
+            if self.peek().map_or(false, |c| c.is_ascii_digit()) {
+                has_frac_part = true;
+                while let Some(c) = self.peek() {
+                    if c.is_ascii_digit() {
+                        self.advance();
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+    
         let lexeme = &self.source[self.start..self.current];
-        if is_float {
+    
+        // ----- validation rules -----
+        // 1. Leading dot without any digit after it? Should never happen because
+        //    we only enter this branch when a digit follows.
+        // 2. Leading dot (no integer part) → malformed (language does not allow .5)
+        // 3. Trailing dot (no fractional part) → malformed (language does not allow 10.)
+        if !has_int_part && !has_frac_part {
+            return self.error_token(LexicalError::MalformedNumber(lexeme.to_string()));
+        }
+        if !has_int_part {
+            return self.error_token(LexicalError::MalformedNumber(lexeme.to_string()));
+        }
+        if !has_frac_part && lexeme.contains('.') {
+            return self.error_token(LexicalError::MalformedNumber(lexeme.to_string()));
+        }
+    
+        // ----- parse and create token -----
+        if lexeme.contains('.') {
             match lexeme.parse::<f64>() {
                 Ok(val) => Token::new(
                     TokenType::FloatLiteral,

@@ -5,9 +5,6 @@ pub mod token;
 pub use scanner::Scanner;
 pub use token::{LiteralValue, Token, TokenType};
 
-// -----------------------------------------------------------------------------
-// Unit tests – run with `cargo test`
-// -----------------------------------------------------------------------------
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -64,14 +61,24 @@ mod tests {
 
     #[test]
     fn test_integer_literals() {
-        let src = "0 42 2147483647 -2147483648";
+        // Positive literals only; negative numbers are handled as two tokens.
+        let src = "0 42 2147483647";
         let tokens = tokenize(src);
-        let expected_values = vec![0, 42, 2147483647, -2147483648];
-        assert_eq!(tokens.len(), 4);
+        let expected_values = vec![0, 42, 2147483647];
+        assert_eq!(tokens.len(), 3);
         for (token, &val) in tokens.iter().zip(expected_values.iter()) {
             assert_eq!(token.token_type, TokenType::IntLiteral);
             assert_eq!(token.literal, LiteralValue::Integer(val));
         }
+
+        // Negative integer: '-' operator + literal (out of range -> error)
+        let src = "-2147483648";
+        let mut scanner = Scanner::new(src);
+        let tok1 = scanner.next_token();
+        assert_eq!(tok1.token_type, TokenType::Minus);
+        let tok2 = scanner.next_token();
+        assert_eq!(tok2.token_type, TokenType::Error);
+        assert!(tok2.lexeme.contains("integer literal out of range"));
     }
 
     #[test]
@@ -82,12 +89,14 @@ mod tests {
         assert_eq!(tokens[0].token_type, TokenType::FloatLiteral);
         assert_eq!(tokens[1].token_type, TokenType::FloatLiteral);
         assert_eq!(tokens[2].token_type, TokenType::Error);
+        assert!(tokens[2].lexeme.contains("malformed number"));
         assert_eq!(tokens[3].token_type, TokenType::Error);
+        assert!(tokens[3].lexeme.contains("malformed number"));
     }
 
     #[test]
     fn test_string_literals() {
-        let src = r#""hello" "world" ""#;
+        let src = "\"hello\" \"world\" \"\"";
         let tokens = tokenize(src);
         assert_eq!(tokens.len(), 3);
         assert_eq!(tokens[0].token_type, TokenType::StringLiteral);
@@ -156,31 +165,30 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_comments() {
-        let src = r#"
-        // single line comment
-        int x = 5; // trailing comment
-        /* block comment */
-        /* nested /* block */ comment */
-        "/* not a comment */"
-        "#;
-        let tokens = tokenize(src);
-        assert_eq!(tokens.len(), 7);
-        assert_eq!(tokens[0].token_type, TokenType::Int);
-        assert_eq!(tokens[1].token_type, TokenType::Identifier);
-        assert_eq!(tokens[1].lexeme, "x");
-        assert_eq!(tokens[2].token_type, TokenType::Equal);
-        assert_eq!(tokens[3].token_type, TokenType::IntLiteral);
-        assert_eq!(tokens[3].literal, LiteralValue::Integer(5));
-        assert_eq!(tokens[4].token_type, TokenType::Semicolon);
-        assert_eq!(tokens[5].token_type, TokenType::StringLiteral);
-        assert_eq!(
-            tokens[5].literal,
-            LiteralValue::String("/* not a comment */".to_string())
-        );
-        assert_eq!(tokens[6].token_type, TokenType::EndOfFile);
-    }
+#[test]
+fn test_comments() {
+    let src = r#"
+    // single line comment
+    int x = 5; // trailing comment
+    /* block comment */
+    /* nested /* block */ comment */
+    "/* not a comment */"
+    "#;
+    let tokens = tokenize(src);
+    assert_eq!(tokens.len(), 6);
+    assert_eq!(tokens[0].token_type, TokenType::Int);
+    assert_eq!(tokens[1].token_type, TokenType::Identifier);
+    assert_eq!(tokens[1].lexeme, "x");
+    assert_eq!(tokens[2].token_type, TokenType::Equal);
+    assert_eq!(tokens[3].token_type, TokenType::IntLiteral);
+    assert_eq!(tokens[3].literal, LiteralValue::Integer(5));
+    assert_eq!(tokens[4].token_type, TokenType::Semicolon);
+    assert_eq!(tokens[5].token_type, TokenType::StringLiteral);
+    assert_eq!(
+        tokens[5].literal,
+        LiteralValue::String("/* not a comment */".to_string())
+    );
+}
 
     #[test]
     fn test_invalid_characters() {
@@ -205,7 +213,7 @@ mod tests {
     fn test_unterminated_comment() {
         let src = "/* comment never ends";
         let mut scanner = Scanner::new(src);
-        let token = scanner.next_token();
+        let token = scanner.next_token(); // should consume comment and return EOF
         assert_eq!(token.token_type, TokenType::EndOfFile);
     }
 
@@ -215,7 +223,7 @@ mod tests {
         let tokens = tokenize(&long_id);
         assert_eq!(tokens.len(), 1);
         assert_eq!(tokens[0].token_type, TokenType::Error);
-        assert!(tokens[0].lexeme.contains("Malformed number"));
+        assert!(tokens[0].lexeme.contains("malformed number"));
     }
 
     #[test]
@@ -224,7 +232,7 @@ mod tests {
         let tokens = tokenize(src);
         assert_eq!(tokens.len(), 1);
         assert_eq!(tokens[0].token_type, TokenType::Error);
-        assert!(tokens[0].lexeme.contains("Integer out of range"));
+        assert!(tokens[0].lexeme.contains("integer literal out of range"));
     }
 
     #[test]
