@@ -1,4 +1,4 @@
-pub mod error;
+﻿pub mod error;
 pub mod scanner;
 pub mod token;
 
@@ -61,7 +61,7 @@ mod tests {
 
     #[test]
     fn test_integer_literals() {
-        // Positive literals only; negative numbers are handled as two tokens.
+        // Только положительные литералы; отрицательные числа обрабатываются как два токена.
         let src = "0 42 2147483647";
         let tokens = tokenize(src);
         let expected_values = vec![0, 42, 2147483647];
@@ -71,7 +71,7 @@ mod tests {
             assert_eq!(token.literal, LiteralValue::Integer(val));
         }
 
-        // Negative integer: '-' operator + literal (out of range -> error)
+        // Отрицательное целое число: оператор '-' + литерал (выход за пределы -> ошибка)
         let src = "-2147483648";
         let mut scanner = Scanner::new(src);
         let tok1 = scanner.next_token();
@@ -168,10 +168,10 @@ mod tests {
 #[test]
 fn test_comments() {
     let src = r#"
-    // single line comment
-    int x = 5; // trailing comment
-    /* block comment */
-    /* nested /* block */ comment */
+    // однострочный комментарий
+    int x = 5; // комментарий в конце строки
+    /* блочный комментарий */
+    /* вложенный /* блочный */ комментарий */
     "/* not a comment */"
     "#;
     let tokens = tokenize(src);
@@ -213,7 +213,7 @@ fn test_comments() {
     fn test_unterminated_comment() {
         let src = "/* comment never ends";
         let mut scanner = Scanner::new(src);
-        let token = scanner.next_token(); // should consume comment and return EOF
+        let token = scanner.next_token(); // должен поглотить комментарий и вернуть EOF
         assert_eq!(token.token_type, TokenType::EndOfFile);
     }
 

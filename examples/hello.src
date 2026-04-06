@@ -1,0 +1,11 @@
+fn main() {
+    // Это простая программа-счетчик
+    int counter = 42;
+    float pi = 3.14;
+    
+    if (counter > 10) {
+        counter -= 10;
+    }
+    
+    return counter;
+}

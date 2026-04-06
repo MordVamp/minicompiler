@@ -1,4 +1,4 @@
-use super::error::LexicalError;
+﻿use super::error::LexicalError;
 use super::token::{LiteralValue, Token, TokenType};
 use std::collections::HashMap;
 use std::iter::Peekable;
@@ -107,7 +107,7 @@ impl<'a> Scanner<'a> {
                     self.single_line_comment();
                     return self.next_token();
                 } else if self.r#match('*') {
-                    // Consume block comment; if unterminated, report error but continue.
+                    // Читаем блочный комментарий; если он не закрыт, сообщаем об ошибке, но продолжаем.
                     let _ = self.block_comment();
                     return self.next_token();
                 } else if self.r#match('=') {
@@ -174,7 +174,7 @@ impl<'a> Scanner<'a> {
     }
 
     // -------------------------------------------------------------------------
-    // Private helpers
+    // Вспомогательные приватные методы
     // -------------------------------------------------------------------------
 
     fn advance(&mut self) -> Option<char> {
@@ -277,12 +277,12 @@ impl<'a> Scanner<'a> {
 
     fn number(&mut self, first_char: char) -> Token {
         let start_line = self.line;
-        let start_column = self.column - 1; // column of the first character
+        let start_column = self.column - 1; // колонка первого символа
     
         let mut has_int_part = false;
         let mut has_frac_part = false;
     
-        // ----- integer part (only if first character is a digit) -----
+        // ----- целая часть (только если первый символ - цифра) -----
         if first_char.is_ascii_digit() {
             has_int_part = true;
             while let Some(c) = self.peek() {
@@ -294,11 +294,11 @@ impl<'a> Scanner<'a> {
             }
         }
     
-        // ----- fractional part -----
-        // If the number starts with '.', the dot is already consumed.
-        // Otherwise, look for a dot after the integer part.
+        // ----- дробная часть -----
+        // Если число начинается с '.', точка уже прочитана.
+        // Иначе, ищем точку после целой части.
         if first_char == '.' {
-            // dot already consumed, now must be followed by a digit
+            // точка уже прочитана, теперь должна следовать цифра
             if self.peek().map_or(false, |c| c.is_ascii_digit()) {
                 has_frac_part = true;
                 while let Some(c) = self.peek() {
@@ -310,7 +310,7 @@ impl<'a> Scanner<'a> {
                 }
             }
         } else if self.peek() == Some('.') {
-            self.advance(); // consume the dot
+            self.advance(); // читаем точку
             if self.peek().map_or(false, |c| c.is_ascii_digit()) {
                 has_frac_part = true;
                 while let Some(c) = self.peek() {
@@ -325,11 +325,11 @@ impl<'a> Scanner<'a> {
     
         let lexeme = &self.source[self.start..self.current];
     
-        // ----- validation rules -----
-        // 1. Leading dot without any digit after it? Should never happen because
-        //    we only enter this branch when a digit follows.
-        // 2. Leading dot (no integer part) → malformed (language does not allow .5)
-        // 3. Trailing dot (no fractional part) → malformed (language does not allow 10.)
+        // ----- правила валидации -----
+        // 1. Ведущая точка без цифры после нее? Не должно произойти, потому что
+        //    мы входим в эту ветку только тогда, когда за ней следует цифра.
+        // 2. Ведущая точка (нет целой части) -> некорректный формат (язык не допускает .5)
+        // 3. Завершающая точка (нет дробной части) -> некорректный формат (язык не допускает 10.)
         if !has_int_part && !has_frac_part {
             return self.error_token(LexicalError::MalformedNumber(lexeme.to_string()));
         }
@@ -340,7 +340,7 @@ impl<'a> Scanner<'a> {
             return self.error_token(LexicalError::MalformedNumber(lexeme.to_string()));
         }
     
-        // ----- parse and create token -----
+        // ----- разбор и создание токена -----
         if lexeme.contains('.') {
             match lexeme.parse::<f64>() {
                 Ok(val) => Token::new(

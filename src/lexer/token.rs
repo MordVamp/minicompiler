@@ -1,6 +1,7 @@
 use std::fmt;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum TokenType {
     // Keywords
     If, Else, While, For, Int, Float, Bool, Return, True, False, Void, Struct, Fn,
@@ -18,11 +19,61 @@ pub enum TokenType {
 
 impl fmt::Display for TokenType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
+        let s = match self {
+            TokenType::If => "KW_IF",
+            TokenType::Else => "KW_ELSE",
+            TokenType::While => "KW_WHILE",
+            TokenType::For => "KW_FOR",
+            TokenType::Int => "KW_INT",
+            TokenType::Float => "KW_FLOAT",
+            TokenType::Bool => "KW_BOOL",
+            TokenType::Return => "KW_RETURN",
+            TokenType::True => "KW_TRUE",
+            TokenType::False => "KW_FALSE",
+            TokenType::Void => "KW_VOID",
+            TokenType::Struct => "KW_STRUCT",
+            TokenType::Fn => "KW_FN",
+            TokenType::Identifier => "IDENTIFIER",
+            TokenType::IntLiteral => "INT_LITERAL",
+            TokenType::FloatLiteral => "FLOAT_LITERAL",
+            TokenType::StringLiteral => "STRING_LITERAL",
+            TokenType::BoolLiteral => "BOOL_LITERAL",
+            TokenType::Plus => "PLUS",
+            TokenType::Minus => "MINUS",
+            TokenType::Star => "STAR",
+            TokenType::Slash => "SLASH",
+            TokenType::Percent => "PERCENT",
+            TokenType::Equal => "ASSIGN",
+            TokenType::EqualEqual => "EQ",
+            TokenType::NotEqual => "NEQ",
+            TokenType::Less => "LT",
+            TokenType::LessEqual => "LTE",
+            TokenType::Greater => "GT",
+            TokenType::GreaterEqual => "GTE",
+            TokenType::AndAnd => "AND",
+            TokenType::OrOr => "OR",
+            TokenType::Bang => "NOT",
+            TokenType::PlusEqual => "PLUS_ASSIGN",
+            TokenType::MinusEqual => "MINUS_ASSIGN",
+            TokenType::StarEqual => "STAR_ASSIGN",
+            TokenType::SlashEqual => "SLASH_ASSIGN",
+            TokenType::LParen => "LPAREN",
+            TokenType::RParen => "RPAREN",
+            TokenType::LBrace => "LBRACE",
+            TokenType::RBrace => "RBRACE",
+            TokenType::LBracket => "LBRACKET",
+            TokenType::RBracket => "RBRACKET",
+            TokenType::Semicolon => "SEMICOLON",
+            TokenType::Comma => "COMMA",
+            TokenType::Colon => "COLON",
+            TokenType::EndOfFile => "END_OF_FILE",
+            TokenType::Error => "ERROR",
+        };
+        write!(f, "{}", s)
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum LiteralValue {
     Integer(i64),
     Float(f64),
