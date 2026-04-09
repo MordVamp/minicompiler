@@ -275,12 +275,13 @@ impl Parser {
             let operator = self.previous().token_type;
             let value = self.parse_assignment()?; // Right-associative
             
-            if let ExpressionNode::Identifier { name, position } = expr {
+            if let ExpressionNode::Identifier { name, position, .. } = expr {
                 return Ok(ExpressionNode::Assignment {
                     target: name,
                     operator,
                     value: Box::new(value),
                     position,
+                    type_info: None,
                 });
             }
             return Err(self.error(self.previous(), "Invalid assignment target."));
@@ -294,7 +295,7 @@ impl Parser {
             let operator = self.previous().token_type;
             let right = self.parse_logical_and()?;
             expr = ExpressionNode::Binary {
-                position: expr.position().clone(), // helper
+                position: expr.position().clone(), type_info: None, // helper
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right),
@@ -309,7 +310,7 @@ impl Parser {
             let operator = self.previous().token_type;
             let right = self.parse_equality()?;
             expr = ExpressionNode::Binary {
-                position: expr.position().clone(),
+                position: expr.position().clone(), type_info: None,
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right),
@@ -324,7 +325,7 @@ impl Parser {
             let operator = self.previous().token_type;
             let right = self.parse_relational()?;
             expr = ExpressionNode::Binary {
-                position: expr.position().clone(),
+                position: expr.position().clone(), type_info: None,
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right),
@@ -339,7 +340,7 @@ impl Parser {
             let operator = self.previous().token_type;
             let right = self.parse_additive()?;
             expr = ExpressionNode::Binary {
-                position: expr.position().clone(),
+                position: expr.position().clone(), type_info: None,
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right),
@@ -354,7 +355,7 @@ impl Parser {
             let operator = self.previous().token_type;
             let right = self.parse_multiplicative()?;
             expr = ExpressionNode::Binary {
-                position: expr.position().clone(),
+                position: expr.position().clone(), type_info: None,
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right),
@@ -369,7 +370,7 @@ impl Parser {
             let operator = self.previous().token_type;
             let right = self.parse_unary()?;
             expr = ExpressionNode::Binary {
-                position: expr.position().clone(),
+                position: expr.position().clone(), type_info: None,
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right),
@@ -387,6 +388,7 @@ impl Parser {
                 operator,
                 operand: Box::new(right),
                 position: pos,
+                type_info: None,
             });
         }
         self.parse_postfix()
@@ -401,6 +403,7 @@ impl Parser {
                 target: Box::new(expr),
                 operator,
                 position: pos,
+                type_info: None,
             };
         }
         Ok(expr)
@@ -410,13 +413,13 @@ impl Parser {
         let pos = self.current_position();
         
         if self.match_token(&[TokenType::False]) {
-            return Ok(ExpressionNode::Literal { value: crate::lexer::token::LiteralValue::Boolean(false), position: pos });
+            return Ok(ExpressionNode::Literal { value: crate::lexer::token::LiteralValue::Boolean(false), position: pos, type_info: None });
         }
         if self.match_token(&[TokenType::True]) {
-            return Ok(ExpressionNode::Literal { value: crate::lexer::token::LiteralValue::Boolean(true), position: pos });
+            return Ok(ExpressionNode::Literal { value: crate::lexer::token::LiteralValue::Boolean(true), position: pos, type_info: None });
         }
         if self.match_token(&[TokenType::IntLiteral, TokenType::FloatLiteral, TokenType::StringLiteral, TokenType::BoolLiteral]) {
-            return Ok(ExpressionNode::Literal { value: self.previous().literal.clone(), position: pos });
+            return Ok(ExpressionNode::Literal { value: self.previous().literal.clone(), position: pos, type_info: None });
         }
         
         if self.match_token(&[TokenType::Identifier]) {
@@ -434,10 +437,10 @@ impl Parser {
                     }
                 }
                 self.consume(TokenType::RParen, "Expected ')' after arguments.")?;
-                return Ok(ExpressionNode::Call { callee: name, arguments, position: pos });
+                return Ok(ExpressionNode::Call { callee: name, arguments, position: pos, type_info: None });
             }
             
-            return Ok(ExpressionNode::Identifier { name, position: pos });
+            return Ok(ExpressionNode::Identifier { name, position: pos, type_info: None });
         }
         
         if self.match_token(&[TokenType::LParen]) {

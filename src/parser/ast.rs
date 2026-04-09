@@ -95,37 +95,44 @@ pub enum ExpressionNode {
     Literal {
         value: LiteralValue,
         position: Position,
+        type_info: Option<String>,
     },
     Identifier {
         name: String,
         position: Position,
+        type_info: Option<String>,
     },
     Binary {
         left: Box<ExpressionNode>,
         operator: TokenType,
         right: Box<ExpressionNode>,
         position: Position,
+        type_info: Option<String>,
     },
     Unary {
         operator: TokenType,
         operand: Box<ExpressionNode>,
         position: Position,
+        type_info: Option<String>,
     },
     Postfix {
         target: Box<ExpressionNode>,
         operator: TokenType,
         position: Position,
+        type_info: Option<String>,
     },
     Call {
         callee: String,
         arguments: Vec<ExpressionNode>,
         position: Position,
+        type_info: Option<String>,
     },
     Assignment {
         target: String,
-        operator: TokenType, // e.g. =, +=
+        operator: TokenType,
         value: Box<ExpressionNode>,
         position: Position,
+        type_info: Option<String>,
     },
 }
 
@@ -353,7 +360,8 @@ impl ExpressionNode {
     }
 
     fn to_pretty_string(&self, _indent: usize) -> String {
-        match self {
+        let t_str = if let Some(t) = self.type_info() { format!(" [type: {}]", t) } else { "".to_string() };
+        let base = match self {
             ExpressionNode::Literal { value, .. } => format!("{}", value),
             ExpressionNode::Identifier { name, .. } => name.clone(),
             ExpressionNode::Binary { left, operator, right, .. } => {
@@ -372,7 +380,8 @@ impl ExpressionNode {
             ExpressionNode::Postfix { target, operator, .. } => {
                 format!("({}{})", target.to_pretty_string(0), Self::op_to_str(operator))
             }
-        }
+        };
+        format!("{}{}", base, t_str)
     }
 
     fn to_dot(&self, out: &mut String, parent_id: &str, id: &mut usize) {
@@ -425,6 +434,30 @@ impl ExpressionNode {
             ExpressionNode::Call { position, .. } => position,
             ExpressionNode::Assignment { position, .. } => position,
             ExpressionNode::Postfix { position, .. } => position,
+        }
+    }
+
+    pub fn type_info(&self) -> Option<&String> {
+        match self {
+            ExpressionNode::Literal { type_info, .. } => type_info.as_ref(),
+            ExpressionNode::Identifier { type_info, .. } => type_info.as_ref(),
+            ExpressionNode::Binary { type_info, .. } => type_info.as_ref(),
+            ExpressionNode::Unary { type_info, .. } => type_info.as_ref(),
+            ExpressionNode::Call { type_info, .. } => type_info.as_ref(),
+            ExpressionNode::Assignment { type_info, .. } => type_info.as_ref(),
+            ExpressionNode::Postfix { type_info, .. } => type_info.as_ref(),
+        }
+    }
+
+    pub fn set_type_info(&mut self, t: String) {
+        match self {
+            ExpressionNode::Literal { type_info, .. } => *type_info = Some(t),
+            ExpressionNode::Identifier { type_info, .. } => *type_info = Some(t),
+            ExpressionNode::Binary { type_info, .. } => *type_info = Some(t),
+            ExpressionNode::Unary { type_info, .. } => *type_info = Some(t),
+            ExpressionNode::Call { type_info, .. } => *type_info = Some(t),
+            ExpressionNode::Assignment { type_info, .. } => *type_info = Some(t),
+            ExpressionNode::Postfix { type_info, .. } => *type_info = Some(t),
         }
     }
 }

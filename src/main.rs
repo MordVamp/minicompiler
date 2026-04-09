@@ -1,4 +1,4 @@
-﻿use anyhow::Result;
+use anyhow::Result;
 use clap::{Parser as ClapParser, Subcommand, ValueEnum};
 use minicompiler::lexer::{Scanner, TokenType};
 use minicompiler::parser::Parser;
@@ -24,33 +24,39 @@ enum AstFormat {
 enum Commands {
     /// Запуск лексера для входного файла и вывод токенов.
     Lex {
-        /// Путь к исходному файлу.
         #[arg(short, long)]
         input: PathBuf,
-
-        /// Необязательный выходной файл (в stdout, если не указан).
         #[arg(short, long)]
         output: Option<PathBuf>,
     },
     /// Запуск синтаксического анализатора для построения AST.
     Parse {
-        /// Путь к исходному файлу.
         #[arg(short, long)]
         input: PathBuf,
-
-        /// Необязательный выходной файл (в stdout, если не указан).
         #[arg(short, long)]
         output: Option<PathBuf>,
-
-        /// Формат вывода AST.
         #[arg(long, value_enum, default_value_t = AstFormat::Text)]
         ast_format: AstFormat,
-
-        /// Выводить дополнительную информацию.
         #[arg(short, long)]
         verbose: bool,
     },
-    /// Запуск всех тестов (валидных и невалидных) и вывод результатов.
+    /// Запуск семантического анализатора (Sprint 3).
+    Check {
+        #[arg(short, long)]
+        input: PathBuf,
+        #[arg(short, long)]
+        verbose: bool,
+    },
+    /// Генерация IR кода (Sprint 4).
+    Ir {
+        #[arg(short, long)]
+        input: PathBuf,
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        #[arg(short, long)]
+        verbose: bool,
+    },
+    /// Запуск всех тестов.
     Test,
 }
 
@@ -60,6 +66,8 @@ fn main() -> Result<()> {
     match cli.command {
         Commands::Lex { input, output } => run_lexer(&input, output.as_ref()),
         Commands::Parse { input, output, ast_format, verbose } => run_parser(&input, output.as_ref(), ast_format, verbose),
+        Commands::Check { input, verbose } => run_check(&input, verbose),
+        Commands::Ir { input, output, verbose } => run_ir(&input, output.as_ref(), verbose),
         Commands::Test => run_tests(),
     }
 }
@@ -136,5 +144,98 @@ fn run_parser(input_path: &PathBuf, output_path: Option<&PathBuf>, format: AstFo
 
 fn run_tests() -> Result<()> {
     println!("Запуск тестов лексера и парсера через `cargo test`...");
+    Ok(())
+}
+
+fn run_check(input_path: &PathBuf, verbose: bool) -> Result<()> {
+    let source = fs::read_to_string(input_path)?;
+    let mut scanner = Scanner::new(&source);
+    let mut tokens = Vec::new();
+    loop {
+        let token = scanner.next_token();
+        let is_eof = token.token_type == TokenType::EndOfFile;
+        tokens.push(token);
+        if is_eof { break; }
+    }
+
+    let mut parser = Parser::new(tokens);
+    let mut ast = match parser.parse() {
+        Ok(ast) => ast,
+        Err(e) => {
+            eprintln!("Ошибка парсинга: {}", e);
+            std::process::exit(1);
+        }
+    };
+
+    let mut analyzer = minicompiler::semantic::analyzer::SemanticAnalyzer::new();
+    if analyzer.analyze(&mut ast) {
+        if verbose {
+            println!("Семантический анализ прошел успешно.");
+            println!("{}", analyzer.symbol_table.dump());
+        } else {
+            println!("OK");
+        }
+    } else {
+        eprintln!("Найдены семантические ошибки:");
+        for err in analyzer.errors {
+            eprintln!("{}", err);
+        }
+        std::process::exit(1);
+    }
+    Ok(())
+}
+
+fn run_ir(input_path: &PathBuf, output_path: Option<&PathBuf>, verbose: bool) -> Result<()> {
+    let source = fs::read_to_string(input_path)?;
+    let mut scanner = Scanner::new(&source);
+    let mut tokens = Vec::new();
+    loop {
+        let token = scanner.next_token();
+        let is_eof = token.token_type == TokenType::EndOfFile;
+        tokens.push(token);
+        if is_eof { break; }
+    }
+
+    let mut parser = Parser::new(tokens);
+    let mut ast = match parser.parse() {
+        Ok(ast) => ast,
+        Err(e) => {
+            eprintln!("Ошибка парсинга: {}", e);
+            std::process::exit(1);
+        }
+    };
+
+    let mut analyzer = minicompiler::semantic::analyzer::SemanticAnalyzer::new();
+    if !analyzer.analyze(&mut ast) {
+        eprintln!("Семантический анализ выявил ошибки. Генерация IR отменена.");
+        for err in analyzer.errors {
+            eprintln!("{}", err);
+        }
+        std::process::exit(1);
+    }
+
+    let mut ir_gen = minicompiler::ir::ir_generator::IRGenerator::new();
+    ir_gen.generate(&ast);
+
+    let mut ssa_builder = minicompiler::ir::ssa_constructor::SSAConstructor::new(ir_gen.blocks);
+    ssa_builder.construct();
+
+    let mut output_str = String::from("--- IR Code (SSA Form) ---\n");
+    let mut keys: Vec<String> = ssa_builder.blocks.keys().cloned().collect();
+    keys.sort();
+    for key in keys {
+        output_str.push_str(&ssa_builder.blocks[&key].to_string());
+        output_str.push('\n');
+    }
+
+    if verbose {
+        println!("Генерация IR завершена успешно.");
+    }
+
+    match output_path {
+        Some(path) => fs::write(path, output_str)?,
+        None => print!("{}", output_str),
+    }
+
     Ok(())
 }
