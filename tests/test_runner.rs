@@ -4,8 +4,7 @@ use std::path::Path;
 
 fn run_test_file(src_path: &Path, expected_path: &Path) {
     let source = fs::read_to_string(src_path).unwrap();
-    let expected_output = fs::read_to_string(expected_path).unwrap_or_default();
-    
+
     let mut scanner = Scanner::new(&source);
     let mut tokens = Vec::new();
     loop {
@@ -46,11 +45,11 @@ fn discover_and_run_tests(dir: &str) {
     for entry in entries {
         let entry = entry.unwrap();
         let path = entry.path();
-        
+
         if path.extension().and_then(|s| s.to_str()) == Some("src") {
             let mut expected_path = path.clone();
             expected_path.set_extension("txt");
-            
+
             run_test_file(&path, &expected_path);
         }
     }

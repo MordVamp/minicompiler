@@ -1,28 +1,55 @@
 # MiniCompiler
 
-Упрощённый лексический анализатор (сканер) для C-подобного компилятора, написанный на Rust.
+MiniCompiler is a lexical and syntax analyzer for a C-like language, implemented in Rust. It transforms source code into an Abstract Syntax Tree (AST) and provides visualization tools.
 
-## Особенности
-- **Лексический анализ**: Надёжный сканер, разделяющий исходный код на корректно сформированные токены.
-- **Обработка ошибок**: Отслеживает позиции строк и столбцов и сообщает об ошибках с подробным описанием.
-- **Тестирование**: Готовый `test_runner.rs`, обеспечивающий точный разбор валидных/невалидных исходных файлов путем сравнения с эталонными файлами.
+## Features
 
-## Структура проекта
-- `src/`: Реализация лексера
-- `tests/lexer/`: Валидные и невалидные тестовые случаи `.src` и `.txt`
-- `tests/test_runner.rs`: Текстовый E2E (End-to-End) раннер тестов
-- `docs/language_spec.md`: Спецификация формального языка
-- `examples/`: Примеры исходных файлов
+- **Lexical Analysis**: Robust scanner following ANSI C lexical rules.
+- **Syntax Analysis**: Recursive descent parser building a comprehensive AST.
+- **Symbol Table**: Tracks identifier declarations, scopes, and types.
+- **Visualization**: Export AST to Text, JSON, and Graphviz (DOT) formats.
+- **Error Handling**: Detailed error reporting with line/column tracking and recovery.
+- **Comprehensive Testing**: Automated test suite for lexer and parser logic.
 
-## Инструкция по сборке (Rust / Cargo)
-Убедитесь, что у вас установлен [Rust](https://www.rust-lang.org/), затем выполните:
+## Project Structure
+
+- `src/lexer/`: Lexer implementation (Scanner, Tokens).
+- `src/parser/`: Parser implementation (AST, Symbol Table, Parser logic).
+- `tests/`: Integration and unit tests.
+- `docs/`: Formal grammar and language specifications.
+- `PROCESS.md`: Detailed explanation of the work process and architecture.
+
+## Getting Started
+
+### Prerequisites
+
+- [Rust](https://www.rust-lang.org/) (Cargo)
+- [Graphviz](https://graphviz.org/) (optional, for AST visualization)
+
+### Build and Run
+
 ```bash
-# Сборка проекта
+# Build the project
 cargo build
 
-# Запуск лексера для пользовательского файла
-cargo run -- lex --input examples/hello.src --output tokens.txt
+# Run the lexer
+cargo run -- lex --input examples/hello.src
 
-# Запуск всех тестов
+# Run the parser (outputs pretty-printed AST)
+cargo run -- parse --input examples/hello.src
+
+# Generate Graphviz visualization
+cargo run -- parse --input examples/hello.src --ast-format dot --output ast.dot
+dot -Tpng ast.dot -o ast.png
+```
+
+### Running Tests
+
+```bash
+# Run all automated tests
 cargo test
 ```
+
+## Work Process
+
+For a detailed look at how the MiniCompiler works, see [PROCESS.md](file:///c:/Prog/Rust/minicompiler_2/PROCESS.md).

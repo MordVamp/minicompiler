@@ -10,7 +10,7 @@ pub enum TokenType {
     // Operators
     Plus, Minus, Star, Slash, Percent, Equal, EqualEqual, NotEqual,
     Less, LessEqual, Greater, GreaterEqual, AndAnd, OrOr, Bang,
-    PlusEqual, MinusEqual, StarEqual, SlashEqual,
+    PlusEqual, MinusEqual, StarEqual, SlashEqual, PlusPlus, MinusMinus,
     // Delimiters
     LParen, RParen, LBrace, RBrace, LBracket, RBracket, Semicolon, Comma, Colon,
     // Special
@@ -57,6 +57,8 @@ impl fmt::Display for TokenType {
             TokenType::MinusEqual => "MINUS_ASSIGN",
             TokenType::StarEqual => "STAR_ASSIGN",
             TokenType::SlashEqual => "SLASH_ASSIGN",
+            TokenType::PlusPlus => "PLUS_PLUS",
+            TokenType::MinusMinus => "MINUS_MINUS",
             TokenType::LParen => "LPAREN",
             TokenType::RParen => "RPAREN",
             TokenType::LBrace => "LBRACE",

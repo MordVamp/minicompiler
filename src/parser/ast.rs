@@ -111,6 +111,11 @@ pub enum ExpressionNode {
         operand: Box<ExpressionNode>,
         position: Position,
     },
+    Postfix {
+        target: Box<ExpressionNode>,
+        operator: TokenType,
+        position: Position,
+    },
     Call {
         callee: String,
         arguments: Vec<ExpressionNode>,
@@ -203,7 +208,7 @@ impl DeclarationNode {
                 }
             }
             DeclarationNode::VarDecl { var_type, name, initializer, .. } => {
-                out.push_str(&format!("  {} [label=\"VarDecl: {} {}\", color=lightblue];\n", my_id, var_type, name));
+                out.push_str(&format!("  {} [label=\"{{VarDecl | {}: {}}}\", color=lightblue, style=filled];\n", my_id, name, var_type));
                 if let Some(init) = initializer {
                     init.to_dot(out, &my_id, id);
                 }
@@ -341,6 +346,8 @@ impl ExpressionNode {
             TokenType::MinusEqual => "-=",
             TokenType::StarEqual => "*=",
             TokenType::SlashEqual => "/=",
+            TokenType::PlusPlus => "++",
+            TokenType::MinusMinus => "--",
             _ => "?",
         }
     }
@@ -361,6 +368,9 @@ impl ExpressionNode {
             }
             ExpressionNode::Assignment { target, operator, value, .. } => {
                 format!("({} {} {})", target, Self::op_to_str(operator), value.to_pretty_string(0))
+            }
+            ExpressionNode::Postfix { target, operator, .. } => {
+                format!("({}{})", target.to_pretty_string(0), Self::op_to_str(operator))
             }
         }
     }
@@ -394,9 +404,27 @@ impl ExpressionNode {
                 }
             }
             ExpressionNode::Assignment { target, operator, value, .. } => {
-                out.push_str(&format!("  {} [label=\"{} {}\", color=red];\n", my_id, target, operator));
+                out.push_str(&format!("  {} [label=\"Assign: {} {}\", color=red];\n", my_id, target, Self::op_to_str(operator)));
                 value.to_dot(out, &my_id, id);
             }
+            ExpressionNode::Postfix { target, operator, .. } => {
+                out.push_str(&format!("  {} [label=\"Postfix {}\", color=orange];\n", my_id, Self::op_to_str(operator)));
+                target.to_dot(out, &my_id, id);
+            }
+        }
+    }
+}
+
+impl ExpressionNode {
+    pub fn position(&self) -> &Position {
+        match self {
+            ExpressionNode::Literal { position, .. } => position,
+            ExpressionNode::Identifier { position, .. } => position,
+            ExpressionNode::Binary { position, .. } => position,
+            ExpressionNode::Unary { position, .. } => position,
+            ExpressionNode::Call { position, .. } => position,
+            ExpressionNode::Assignment { position, .. } => position,
+            ExpressionNode::Postfix { position, .. } => position,
         }
     }
 }

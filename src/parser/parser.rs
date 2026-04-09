@@ -1,14 +1,16 @@
 use crate::lexer::token::{Token, TokenType};
 use crate::parser::ast::*;
+use crate::parser::symbol_table::{SymbolTable, SymbolKind};
 
 pub struct Parser {
     tokens: Vec<Token>,
     current: usize,
+    pub symbols: SymbolTable,
 }
 
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
-        Self { tokens, current: 0 }
+        Self { tokens, current: 0, symbols: SymbolTable::new() }
     }
 
     pub fn parse(&mut self) -> Result<ProgramNode, String> {
@@ -69,8 +71,15 @@ impl Parser {
             return_type = self.previous().lexeme.clone();
         }
         
+        let _ = self.symbols.define(name_token.lexeme.clone(), SymbolKind::Function, return_type.clone(), pos.line, pos.column);
+        self.symbols.enter_scope();
+        for p in &parameters {
+            let _ = self.symbols.define(p.name.clone(), SymbolKind::Variable, p.var_type.clone(), pos.line, pos.column);
+        }
+
         self.consume(TokenType::LBrace, "Expected '{' before function body.")?;
         let body = self.parse_block_statement()?;
+        self.symbols.exit_scope();
         
         Ok(DeclarationNode::FunctionDecl {
             name: name_token.lexeme,
@@ -115,6 +124,8 @@ impl Parser {
             None
         };
         
+        let _ = self.symbols.define(name_token.lexeme.clone(), SymbolKind::Variable, type_token.lexeme.clone(), pos.line, pos.column);
+
         Ok(DeclarationNode::VarDecl {
             var_type: type_token.lexeme,
             name: name_token.lexeme,
@@ -368,7 +379,7 @@ impl Parser {
     }
 
     fn parse_unary(&mut self) -> Result<ExpressionNode, String> {
-        if self.match_token(&[TokenType::Bang, TokenType::Minus]) {
+        if self.match_token(&[TokenType::Bang, TokenType::Minus, TokenType::PlusPlus, TokenType::MinusMinus]) {
             let operator = self.previous().token_type;
             let pos = Position { line: self.previous().line, column: self.previous().column };
             let right = self.parse_unary()?;
@@ -378,7 +389,21 @@ impl Parser {
                 position: pos,
             });
         }
-        self.parse_primary()
+        self.parse_postfix()
+    }
+
+    fn parse_postfix(&mut self) -> Result<ExpressionNode, String> {
+        let mut expr = self.parse_primary()?;
+        while self.match_token(&[TokenType::PlusPlus, TokenType::MinusMinus]) {
+            let operator = self.previous().token_type;
+            let pos = Position { line: self.previous().line, column: self.previous().column };
+            expr = ExpressionNode::Postfix {
+                target: Box::new(expr),
+                operator,
+                position: pos,
+            };
+        }
+        Ok(expr)
     }
 
     fn parse_primary(&mut self) -> Result<ExpressionNode, String> {
@@ -487,16 +512,3 @@ impl Parser {
     }
 }
 
-// Ensure ExpressionNode returns position
-impl ExpressionNode {
-    pub fn position(&self) -> &Position {
-        match self {
-            ExpressionNode::Literal { position, .. } => position,
-            ExpressionNode::Identifier { position, .. } => position,
-            ExpressionNode::Binary { position, .. } => position,
-            ExpressionNode::Unary { position, .. } => position,
-            ExpressionNode::Call { position, .. } => position,
-            ExpressionNode::Assignment { position, .. } => position,
-        }
-    }
-}

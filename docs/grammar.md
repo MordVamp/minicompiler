@@ -1,6 +1,6 @@
-# MiniCompiler Formal Grammar Specification (Sprint 2)
-
 This document describes the Context-Free Grammar (CFG) for the MiniCompiler language in Extended Backus-Naur Form (EBNF).
+
+The grammar is adapted from the [ANSI C Grammar](https://www.lysator.liu.se/c/ANSI-C-grammar-y.html) and simplified for educational purposes.
 
 ## 1. Start Symbol & Program
 ```ebnf
@@ -53,7 +53,8 @@ Equality       ::= Relational ( ( "==" | "!=" ) Relational )*
 Relational     ::= Additive ( ( "<" | "<=" | ">" | ">=" ) Additive )*
 Additive       ::= Multiplicative ( ( "+" | "-" ) Multiplicative )*
 Multiplicative ::= Unary ( ( "*" | "/" | "%" ) Unary )*
-Unary          ::= ( "!" | "-" ) Unary | Primary
+Unary          ::= ( "!" | "-" | "++" | "--" ) Unary | Postfix
+Postfix        ::= Primary ( "++" | "--" )*
 
 Primary        ::= IntLiteral 
                  | FloatLiteral 
@@ -76,7 +77,7 @@ ArgList        ::= Expression ("," Expression)*
 
 | Precedence Level | Operators | Associativity | Example |
 | :--- | :--- | :--- | :--- |
-| 1 (Highest) | `!`, `-` (Unary) | Right | `!a`, `-b` |
+| 1 (Highest) | `!`, `-` (Unary), `++`, `--` | Right (Prefix) / Left (Postfix) | `!a`, `++i`, `i--` |
 | 2 | `*`, `/`, `%` | Left | `a * b / c` |
 | 3 | `+`, `-` | Left | `a + b - c` |
 | 4 | `<`, `<=`, `>`, `>=` | Non-Associative | `a < b` |

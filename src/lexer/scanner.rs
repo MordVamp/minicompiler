@@ -1,4 +1,4 @@
-﻿use super::error::LexicalError;
+use super::error::LexicalError;
 use super::token::{LiteralValue, Token, TokenType};
 use std::collections::HashMap;
 use std::iter::Peekable;
@@ -84,6 +84,8 @@ impl<'a> Scanner<'a> {
             '+' => {
                 if self.r#match('=') {
                     self.simple_token(TokenType::PlusEqual)
+                } else if self.r#match('+') {
+                    self.simple_token(TokenType::PlusPlus)
                 } else {
                     self.simple_token(TokenType::Plus)
                 }
@@ -91,6 +93,8 @@ impl<'a> Scanner<'a> {
             '-' => {
                 if self.r#match('=') {
                     self.simple_token(TokenType::MinusEqual)
+                } else if self.r#match('-') {
+                    self.simple_token(TokenType::MinusMinus)
                 } else {
                     self.simple_token(TokenType::Minus)
                 }
