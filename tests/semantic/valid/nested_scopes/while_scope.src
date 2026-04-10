@@ -1,0 +1,7 @@
+fn f() -> void {
+    int i = 0;
+    while (i > 0) {
+        int inner = i;
+        i = inner;
+    }
+}

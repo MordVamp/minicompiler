@@ -1,0 +1,18 @@
+end_if_2:
+  RETURN n_0
+
+entry:
+
+func_factorial:
+  t1_1 = ADD n_0, 1
+  JUMP_IF_NOT t1_0 end_if_2
+
+func_main:
+  PARAM 5
+  t2_1 = CALL factorial, 1
+  result_1 = MOVE t2_1
+
+then_1:
+  RETURN 1
+  JUMP end_if_2
+

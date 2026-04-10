@@ -1,0 +1,270 @@
+MiniCompiler: Sprint 3 & 4 Technical Analysis
+============================================
+All 98 tests passing as of last run (cargo test).
+
+1. AST Traversal Mechanism
+---------------------------
+The compiler does NOT use a formal Visitor trait. Instead it uses recursive
+pattern-matching (match statements) on Rust enums — known as the "pseudo-visitor"
+pattern. The three layers below cover the entire AST top-to-bottom.
+
+  +---------------------------+-------------------------------+----------------------------+
+  | Method                    | Responsibility                | Target Nodes               |
+  +---------------------------+-------------------------------+----------------------------+
+  | visit_declaration()       | Top-level structure           | Functions, Structs, Vars   |
+  | visit_statement()         | Control flow and actions      | Block, If, While, Return   |
+  | visit_expression() ->Type | Logic, returns inferred type  | Literals, Binary, Calls    |
+  +---------------------------+-------------------------------+----------------------------+
+
+  Entry point (analyzer.rs:26):
+      pub fn analyze(&mut self, program: &mut ProgramNode) -> bool {
+          for decl in &mut program.declarations {
+              self.visit_declaration(decl);
+          }
+          self.errors.is_empty()
+      }
+
+  The IR generator (ir_generator.rs) uses the same three-layer pattern, but
+  instead of returning a Type, visit_expression returns an Operand and emits
+  IRInstructions into the current BasicBlock.
+
+
+2. Visibility Scopes & Symbol Table
+-------------------------------------
+Scopes are a stack (Vec) of hash maps (HashMap<String, Symbol>).
+
+  +-------------------+--------------------------------------------------------------------------+
+  | Operation         | Implementation                                                           |
+  +-------------------+--------------------------------------------------------------------------+
+  | Stack structure   | Vec<HashMap<String, Symbol>>                                             |
+  | enter_scope()     | scopes.push(HashMap::new())  — called on { } blocks and fn parameters   |
+  | exit_scope()      | scopes.pop()                 — called on leaving the block               |
+  | define(name, ...) | scopes.last_mut().insert(…)  — only the innermost scope                  |
+  | lookup(name)      | scopes.iter().rev() search   — inner → outer (shadowing works)           |
+  | lookup_local(name)| scopes.last().get(name)      — current scope only (dup-check)            |
+  +-------------------+--------------------------------------------------------------------------+
+
+  Scope events in source code:
+      fn f(int x) -> void {      ← enter function scope (params registered here)
+          if (x > 0) {           ← enter block scope
+              int y = x;         ← y registered in inner scope
+          }                      ← exit block scope, y is gone
+      }                          ← exit function scope
+
+
+3. Type Checking & Mismatch Handling
+--------------------------------------
+Type safety is enforced bottom-up: leaf nodes return a Type, which bubbles up.
+
+  +------------------------+----------------------------------------------------------------------+
+  | Action                 | Logic                                                                |
+  +------------------------+----------------------------------------------------------------------+
+  | Inference              | visit_expression returns Type enum variant (Int, Float, Bool, …)    |
+  | Decoration             | expr.set_type_info(ty) stores the inferred type inside the AST node  |
+  | Mismatch check         | PartialEq derived on Type enum: Int != Float etc.                    |
+  | Error sentinel         | Type::Unknown — returned after an error to stop cascading reports    |
+  +------------------------+----------------------------------------------------------------------+
+
+  Where mismatches are caught (analyzer.rs):
+      Binary expr   : l_ty != r_ty  (line 179)
+      Assignment    : s_ty != v_ty  (line 230-231)
+      VarDecl init  : init_ty != declared_ty (line 76-77)
+      Return stmt   : ret_ty != expected (line 141-142)
+      If/While cond : cond_ty != Type::Bool (lines 102, 112)
+      Fn call args  : p_ty != a_ty per argument (line 257)
+
+  Error message format (errors.rs):
+      "Semantic Error at line {}, column {}: {}"
+  Example (from golden file):
+      Semantic Error at line 1, column 44: Type mismatch in assignment: cannot assign float to int 'x'
+
+  NOTE: int + float is currently a TYPE MISMATCH — implicit widening is NOT
+  implemented. Both sides of a binary expression must be identical types.
+
+
+4. IR Generation & SSA
+------------------------
+Sprint 4 translates the decorated AST into three-address code in SSA form.
+
+  +------------------------+----------------------------------------------------------------------+
+  | Step                   | Description                                                          |
+  +------------------------+----------------------------------------------------------------------+
+  | Block management       | HashMap<String, BasicBlock>; current_block tracks active block       |
+  | emit(inst)             | Appends IRInstruction to current BasicBlock                          |
+  | switch_block(label)    | Changes active block, creating it if it doesn't exist yet            |
+  | SSA versioning         | Post-pass by SSAConstructor: x_0 → x_1, x_2 per write               |
+  | Control flow           | JumpIfFalse + new then/else/end_if blocks per if-statement           |
+  +------------------------+----------------------------------------------------------------------+
+
+  SSA versioning (ssa_constructor.rs):
+      Read  : version_operand_read  → stamps CURRENT counter (no increment)
+      Write : version_operand_write → INCREMENTS counter, returns new version
+
+  Limitation: SSA is per-block sequential only. Full SSA would require
+  Dominance Frontier analysis + PHI node insertion at join points. The
+  Phi instruction exists in ir_instructions.rs but is not auto-inserted.
+
+
+5. Test Architecture (all 98 tests passing)
+--------------------------------------------
+
+  Sprint 1 — Lexer (Golden File style):
+  ┌────────────────────────────────────────────────────────────────────────┐
+  │  tests/lexer/valid/*.src   →  compared to *.txt (token stream)         │
+  │  tests/lexer/invalid/*.src →  compared to *.txt (token stream + errors)│
+  │  Runner: tests/test_runner.rs (auto-discovers src/txt pairs)           │
+  └────────────────────────────────────────────────────────────────────────┘
+
+  Sprint 2 — Parser (Internal unit tests):
+  ┌────────────────────────────────────────────────────────────────────────┐
+  │  tests/parser_tests.rs  (25 tests, inline source strings)              │
+  │  tests/parser/{valid,invalid}/*.src  (files exist, no golden runner)   │
+  └────────────────────────────────────────────────────────────────────────┘
+
+  Sprint 3 — Semantic Analysis (two-tier):
+  ┌────────────────────────────────────────────────────────────────────────┐
+  │  UNIT (tests/semantic_tests.rs, 25 tests)                              │
+  │    Per-rule inline tests covering every error category.                │
+  │  GOLDEN (tests/semantic_golden.rs, 2 test functions = N files)         │
+  │    tests/semantic/valid/*/  → golden = symbol table dump               │
+  │    tests/semantic/invalid/* → golden = error message lines             │
+  │    Regenerate: UPDATE_EXPECT=1 cargo test --test semantic_golden       │
+  └────────────────────────────────────────────────────────────────────────┘
+
+  Sprint 4 — IR Generation (two-tier):
+  ┌────────────────────────────────────────────────────────────────────────┐
+  │  UNIT (tests/ir_tests.rs, 24 tests)                                    │
+  │    Structural assertions on raw IRGenerator output.                    │
+  │  GOLDEN (tests/ir_golden.rs, 2 test functions = N files)               │
+  │    tests/ir/generation/*/   → golden = SSA IR text dump                │
+  │    tests/ir/validation/*/   → golden = SSA IR text dump                │
+  │    Regenerate: UPDATE_EXPECT=1 cargo test --test ir_golden             │
+  └────────────────────────────────────────────────────────────────────────┘
+
+  Golden file format — valid semantic (*.txt):
+      --- Symbol Table Dump ---
+      Scope level 0:
+        f : Function of type fn() -> void
+      -------------------------
+
+  Golden file format — invalid semantic (*.txt):
+      Semantic Error at line 1, column 44: Type mismatch in assignment: cannot assign float to int 'x'
+
+  Test with 2 type mismatches (test_err_multiple_errors_collected):
+      fn f() -> void {
+         int x = ghost1; // Error 1: Undefined variable 'ghost1'
+         int y = ghost2; // Error 2: Undefined variable 'ghost2'
+      }
+
+
+6. Test Coverage by Sprint
+---------------------------
+
+  +----------+-------------------------------------------+----------+----------+
+  | Sprint   | Test File(s)                              | Tests    | Style    |
+  +----------+-------------------------------------------+----------+----------+
+  | 1 Lexer  | test_runner.rs + lexer_tests.rs           | 5        | Golden   |
+  | 2 Parser | parser_tests.rs                           | 25       | Internal |
+  | 3 Semant | semantic_tests.rs + semantic_golden.rs    | 25 + 2   | Both     |
+  | 4 IR     | ir_tests.rs + ir_golden.rs                | 24 + 2   | Both     |
+  | Lib unit | src/lib.rs inline tests                   | 15       | Internal |
+  +----------+-------------------------------------------+----------+----------+
+  | TOTAL    |                                           | 98       | 100% OK  |
+  +----------+-------------------------------------------+----------+----------+
+
+
+===============================================================================
+RU Translation / Перевод на русский
+===============================================================================
+
+1. Механизм обхода AST
+-----------------------
+Формальный паттерн Visitor не используется. Вместо него — рекурсивное
+сопоставление с образцом (match) на перечислениях Rust.
+
+  +--------------------------+-------------------------------+----------------------------+
+  | Метод                    | Ответственность               | Узлы AST                   |
+  +--------------------------+-------------------------------+----------------------------+
+  | visit_declaration()      | Объявления верхнего уровня    | Функции, Структуры, Перем. |
+  | visit_statement()        | Поток управления              | Block, If, While, Return   |
+  | visit_expression()->Type | Вычисление, возврат типа      | Литералы, Бинарные, Вызовы |
+  +--------------------------+-------------------------------+----------------------------+
+
+  Генератор IR использует ту же трёхуровневую схему, но возвращает Operand
+  и эмитирует IRInstruction в текущий BasicBlock.
+
+
+2. Области видимости и Таблица символов
+----------------------------------------
+Стек хеш-карт: Vec<HashMap<String, Symbol>>.
+
+  +-------------------+--------------------------------------------------------------------------+
+  | Операция          | Реализация                                                               |
+  +-------------------+--------------------------------------------------------------------------+
+  | enter_scope()     | scopes.push(HashMap::new())  — при входе в { } или параметры функции    |
+  | exit_scope()      | scopes.pop()                 — при выходе из блока                       |
+  | define(name)      | scopes.last_mut().insert(…)  — только в текущей области                 |
+  | lookup(name)      | scopes.iter().rev()          — от внутренней к внешней (сокрытие)        |
+  | lookup_local(name)| scopes.last().get(name)      — только текущая (проверка дублей)          |
+  +-------------------+--------------------------------------------------------------------------+
+
+
+3. Проверка типов и обработка несоответствий
+---------------------------------------------
+Вывод типов снизу вверх: каждый узел выражения возвращает Type.
+
+  +---------------------+-------------------------------------------------------------------------+
+  | Действие            | Логика                                                                  |
+  +---------------------+-------------------------------------------------------------------------+
+  | Вывод типов         | visit_expression возвращает вариант перечисления Type                   |
+  | Декорирование       | expr.set_type_info(ty) — тип сохраняется прямо в узле AST              |
+  | Проверка            | PartialEq на Type: Int != Float и т.д.                                  |
+  | Восстановление      | Type::Unknown — сентинел для подавления каскадных ошибок               |
+  +---------------------+-------------------------------------------------------------------------+
+
+  Формат ошибки: "Semantic Error at line {}, column {}: {}"
+  ВАЖНО: int + float — ОШИБКА ТИПОВ, неявное расширение НЕ реализовано.
+
+
+4. Генерация IR и SSA
+----------------------
+Трёхадресный код в форме SSA, генерируется из декорированного AST.
+
+  +---------------------+-------------------------------------------------------------------------+
+  | Этап                | Описание                                                                |
+  +---------------------+-------------------------------------------------------------------------+
+  | Блоки               | HashMap<String, BasicBlock>; current_block — активный блок             |
+  | emit(inst)          | Добавляет инструкцию в текущий BasicBlock                              |
+  | switch_block(label) | Меняет активный блок, создаёт если не существует                       |
+  | SSA версионирование | Постпроход SSAConstructor: x_0 → x_1, x_2 per запись                  |
+  | Поток управления    | JumpIfFalse + новые блоки then/else/end_if per if-statement            |
+  +---------------------+-------------------------------------------------------------------------+
+
+  Ограничение: SSA только внутри блоков. Полная SSA-форма (с анализом
+  дереть доминирования и PHI-узлами) не реализована.
+
+
+5. Архитектура тестов (98 тестов, все проходят)
+------------------------------------------------
+
+  Спринт 1 — Лексер (Golden File):
+    tests/lexer/valid/*.src   → сравниваются с *.txt (поток токенов)
+    tests/lexer/invalid/*.src → сравниваются с *.txt (токены + ошибки)
+    Runner: tests/test_runner.rs
+
+  Спринт 2 — Парсер (внутренние тесты):
+    tests/parser_tests.rs (25 тестов, источник в строках Rust)
+
+  Спринт 3 — Семантика (двухуровневый):
+    UNIT:   tests/semantic_tests.rs (25 тестов)
+    GOLDEN: tests/semantic_golden.rs (2 функции = N файлов)
+      valid/   → golden = дамп таблицы символов
+      invalid/ → golden = строки сообщений об ошибках
+    Обновить: UPDATE_EXPECT=1 cargo test --test semantic_golden
+
+  Спринт 4 — IR (двухуровневый):
+    UNIT:   tests/ir_tests.rs (24 теста)
+    GOLDEN: tests/ir_golden.rs (2 функции = N файлов)
+      generation/ → golden = дамп SSA IR
+      validation/ → golden = дамп SSA IR
+    Обновить: UPDATE_EXPECT=1 cargo test --test ir_golden

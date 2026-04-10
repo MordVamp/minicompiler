@@ -1,0 +1,6 @@
+entry:
+
+func_bar:
+
+func_foo:
+

@@ -1,0 +1,5 @@
+--- Symbol Table Dump ---
+Scope level 0:
+  factorial : Function of type fn(int) -> int
+  main : Function of type fn() -> void
+-------------------------

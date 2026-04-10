@@ -1,0 +1,7 @@
+fn compute(int a, float b) -> int {
+    int bad_binary = a + b;
+    int x = 0;
+    float y = 1.0;
+    x = y;
+    return true;
+}

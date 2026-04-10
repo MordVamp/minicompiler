@@ -1,0 +1,2 @@
+Semantic Error at line 1, column 26: Undefined variable 'ghost1'
+Semantic Error at line 1, column 42: Undefined variable 'ghost2'

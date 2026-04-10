@@ -1,0 +1,1 @@
+fn f() -> void { bool b = true; bool c = !b; }

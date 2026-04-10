@@ -1,0 +1,5 @@
+entry:
+
+func_f:
+  RETURN 42
+

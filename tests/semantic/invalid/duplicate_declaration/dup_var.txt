@@ -1,0 +1,1 @@
+Semantic Error at line 1, column 29: Identifier 'x' already defined in this scope.

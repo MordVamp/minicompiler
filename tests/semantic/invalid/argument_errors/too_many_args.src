@@ -1,0 +1,2 @@
+fn id(int a) -> int { return a; }
+fn main() -> void { int r = id(1, 2, 3); }

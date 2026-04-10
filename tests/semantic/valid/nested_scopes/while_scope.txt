@@ -1,0 +1,4 @@
+--- Symbol Table Dump ---
+Scope level 0:
+  f : Function of type fn() -> void
+-------------------------

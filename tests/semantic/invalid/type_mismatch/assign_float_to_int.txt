@@ -1,0 +1,1 @@
+Semantic Error at line 1, column 44: Type mismatch in assignment: cannot assign float to int 'x'

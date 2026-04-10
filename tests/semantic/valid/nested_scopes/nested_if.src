@@ -1,0 +1,9 @@
+fn f() -> void {
+    int x = 1;
+    if (x > 0) {
+        int y = x + 1;
+        if (y > 1) {
+            int z = y + x;
+        }
+    }
+}

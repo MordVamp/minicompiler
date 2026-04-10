@@ -1,0 +1,1 @@
+Semantic Error at line 2, column 29: Function 'add' requires 2 arguments, but 1 were provided

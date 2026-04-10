@@ -1,0 +1,6 @@
+entry:
+
+func_f:
+  x_1 = MOVE 1
+  x_2 = MOVE 2
+

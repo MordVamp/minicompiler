@@ -1,0 +1,2 @@
+Semantic Error at line 1, column 57: Undefined variable 'inner'
+Semantic Error at line 1, column 49: Undefined variable 'inner' in assignment

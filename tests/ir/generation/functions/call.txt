@@ -1,0 +1,11 @@
+entry:
+
+func_add:
+  RETURN a_0
+
+func_main:
+  PARAM 1
+  PARAM 2
+  t1_1 = CALL add, 2
+  r_1 = MOVE t1_1
+

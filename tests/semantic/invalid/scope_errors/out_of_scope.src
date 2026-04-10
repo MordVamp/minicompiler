@@ -1,0 +1,1 @@
+fn f() -> void { if (1 == 1) { int inner = 5; } inner = inner + 1; }

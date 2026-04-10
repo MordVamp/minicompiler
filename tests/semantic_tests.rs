@@ -275,6 +275,39 @@ fn test_err_multiple_errors_collected() {
     );
 }
 
+#[test]
+fn test_err_multiple_type_mismatches() {
+    // Three distinct type mismatch errors in one function:
+    //   1. binary: int + float  → type mismatch
+    //   2. assignment: float assigned to int variable → type mismatch
+    //   3. return: bool returned from int function → return type mismatch
+    // All three must be collected in a single pass (error recovery).
+    let (ok, errors) = analyze(r#"
+        fn compute(int a, float b) -> int {
+            int bad_binary = a + b;
+            int x = 0;
+            float y = 1.0;
+            x = y;
+            return true;
+        }
+    "#);
+    assert!(!ok, "Multiple type mismatches must fail");
+    assert!(
+        errors.len() >= 3,
+        "All 3 type mismatch errors must be collected; got {} errors:\n  {}",
+        errors.len(),
+        errors.join("\n  ")
+    );
+    assert!(
+        errors.iter().any(|e| e.to_lowercase().contains("mismatch")),
+        "Expected at least one 'mismatch' error; got: {:?}", errors
+    );
+    assert!(
+        errors.iter().any(|e| e.to_lowercase().contains("return")),
+        "Expected a return type error; got: {:?}", errors
+    );
+}
+
 // ════════════════════════════════════════════════════════════
 // Integration — full pipeline lex → parse → semantic
 // ════════════════════════════════════════════════════════════

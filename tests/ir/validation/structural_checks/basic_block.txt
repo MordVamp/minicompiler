@@ -1,0 +1,5 @@
+entry:
+
+func_main:
+  x_1 = MOVE 1
+
