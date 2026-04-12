@@ -1,0 +1,15 @@
+entry:
+
+func_get_square:
+  t1_1 = MUL n_0, n_0
+  RETURN t1_0
+
+func_main:
+  PARAM 4
+  t2_1 = CALL get_square, 1
+  s_1 = MOVE t2_1
+  PARAM s_1
+  t3_1 = CALL print_result, 1
+
+func_print_result:
+

@@ -1,0 +1,12 @@
+fn get_square(int n) -> int {
+    return n * n;
+}
+
+fn print_result(int res) -> void {
+    // No-op
+}
+
+fn main() -> void {
+    int s = get_square(4);
+    print_result(s);
+}

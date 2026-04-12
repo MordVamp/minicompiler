@@ -328,7 +328,7 @@ The project has a comprehensive test suite. To run all tests:
 cargo test
 ```
 
-Current test count: **99 tests, all passing**.
+Current test count: **101 tests, all passing**.
 
 | Suite | What it tests | Count |
 | :--- | :--- | :--- |
@@ -338,8 +338,21 @@ Current test count: **99 tests, all passing**.
 | `parser_tests.rs` | AST construction and syntax errors | 25 |
 | `semantic_tests.rs` | Type checking, scopes, errors | 26 |
 | `semantic_golden.rs` | Semantic output vs. golden files | 2 |
-| `ir_tests.rs` | IR instruction generation | 24 |
+| `ir_tests.rs` | IR instruction generation | 26 |
 | `ir_golden.rs` | IR text output vs. golden files | 2 |
+
+---
+
+## The "Super Command": Dump
+
+If you want to see everything at once (Tokens + AST + Symbol Table + IR), use the `dump` command:
+
+```bash
+cargo run -- dump --input my_program.src
+```
+
+This is the best way to see how the compiler transforms your code at every single step!
+
 
 **What are golden files?** A "golden file" is a pre-saved expected output. The test
 runs the compiler on a `.src` file, then compares the output to the matching `.txt`

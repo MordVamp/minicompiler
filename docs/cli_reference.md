@@ -169,6 +169,28 @@ func_main:
 
 ---
 
+### `dump` — Full Compiler Dump
+
+Outputs everything: Tokens, AST, Symbol Table, and SSA-form IR. Useful for debugging and learning.
+
+```
+cargo run -- dump --input <FILE>
+```
+
+| Flag | Short | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `--input <FILE>` | `-i` | Yes | Path to the `.src` source file |
+
+**Output format:**
+Sequentially prints the output of `lex`, `parse`, `check --verbose`, and `ir`.
+
+**Example:**
+```bash
+cargo run -- dump --input examples/hello.src
+```
+
+---
+
 ### `test` — Run Tests (shortcut)
 
 Prints a message directing you to use `cargo test`. Exists for CLI completeness.

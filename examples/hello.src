@@ -1,4 +1,4 @@
-fn main() {
+fn main() -> int {
     // Это простая программа-счетчик
     int counter = 42;
     float pi = 3.14;

@@ -58,6 +58,11 @@ enum Commands {
     },
     /// Запуск всех тестов.
     Test,
+    /// Полный дамп всех этапов компиляции (Токены, AST, Символы, IR).
+    Dump {
+        #[arg(short, long)]
+        input: PathBuf,
+    },
 }
 
 fn main() -> Result<()> {
@@ -68,6 +73,7 @@ fn main() -> Result<()> {
         Commands::Parse { input, output, ast_format, verbose } => run_parser(&input, output.as_ref(), ast_format, verbose),
         Commands::Check { input, verbose } => run_check(&input, verbose),
         Commands::Ir { input, output, verbose } => run_ir(&input, output.as_ref(), verbose),
+        Commands::Dump { input } => run_dump(&input),
         Commands::Test => run_tests(),
     }
 }
@@ -235,6 +241,68 @@ fn run_ir(input_path: &PathBuf, output_path: Option<&PathBuf>, verbose: bool) ->
     match output_path {
         Some(path) => fs::write(path, output_str)?,
         None => print!("{}", output_str),
+    }
+
+    Ok(())
+}
+
+fn run_dump(input_path: &PathBuf) -> Result<()> {
+    let source = fs::read_to_string(input_path)?;
+
+    // 1. Lexer
+    println!("=== 1. TOKENS (OUTPUT TABLE) ===");
+    let mut scanner = Scanner::new(&source);
+    let mut tokens = Vec::new();
+    loop {
+        let token = scanner.next_token();
+        let is_eof = token.token_type == TokenType::EndOfFile;
+        println!("{}", token);
+        tokens.push(token);
+        if is_eof { break; }
+    }
+    println!();
+
+    // 2. Parser
+    println!("=== 2. ABSTRACT SYNTAX TREE ===");
+    let mut parser = Parser::new(tokens.clone());
+    let mut ast = match parser.parse() {
+        Ok(ast) => {
+            println!("{}", ast.to_pretty_string());
+            ast
+        },
+        Err(e) => {
+            eprintln!("Ошибка парсинга: {}", e);
+            std::process::exit(1);
+        }
+    };
+    println!();
+
+    // 3. Semantic
+    println!("=== 3. ANNOTATED SYMBOL TABLE ===");
+    let mut analyzer = minicompiler::semantic::analyzer::SemanticAnalyzer::new();
+    if analyzer.analyze(&mut ast) {
+        println!("{}", analyzer.symbol_table.dump());
+    } else {
+        eprintln!("Найдены семантические ошибки:");
+        for err in analyzer.errors {
+            eprintln!("{}", err);
+        }
+        std::process::exit(1);
+    }
+    println!();
+
+    // 4. IR / SSA
+    println!("=== 4. SSA IR CODE ===");
+    let mut ir_gen = minicompiler::ir::ir_generator::IRGenerator::new();
+    ir_gen.generate(&ast);
+
+    let mut ssa_builder = minicompiler::ir::ssa_constructor::SSAConstructor::new(ir_gen.blocks);
+    ssa_builder.construct();
+
+    let mut keys: Vec<String> = ssa_builder.blocks.keys().cloned().collect();
+    keys.sort();
+    for key in keys {
+        println!("{}", ssa_builder.blocks[&key].to_string());
     }
 
     Ok(())

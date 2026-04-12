@@ -1,0 +1,12 @@
+fn print_val(int v) -> void {
+    // No-op for now
+}
+
+fn log_event(int event_id) -> void {
+    // No-op for now
+}
+
+fn main() -> void {
+    print_val(42);
+    log_event(1);
+}

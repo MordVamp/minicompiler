@@ -344,3 +344,42 @@ fn test_ir_integration_multiple_expressions() {
     assert!(ir_text.contains("ADD"), "IR must have ADD; IR:\n{}", ir_text);
     assert!(ir_text.contains("MUL"), "IR must have MUL; IR:\n{}", ir_text);
 }
+
+// ════════════════════════════════════════════════════════════
+// Multi-function SSA Tests
+// ════════════════════════════════════════════════════════════
+
+#[test]
+fn test_ir_multiple_functions_mixed() {
+    let src = r#"
+        fn square(int n) -> int { return n * n; }
+        fn log(int val) -> void { }
+        fn main() -> void { log(square(2)); }
+    "#;
+    let gen = raw_ir(src);
+    
+    let has_square = gen.blocks.keys().any(|k| k.contains("square"));
+    let has_log = gen.blocks.keys().any(|k| k.contains("log"));
+    let has_main = gen.blocks.keys().any(|k| k.contains("main"));
+    
+    assert!(has_square, "Block for 'square' must exist");
+    assert!(has_log, "Block for 'log' must exist");
+    assert!(has_main, "Block for 'main' must exist");
+}
+
+#[test]
+fn test_ir_complex_math_ssa() {
+    let ir_text = ir_for(r#"
+        fn main() -> void {
+            int a = 10;
+            int b = 20;
+            int c = 30;
+            int res = (a + b) * c - (b / a) + (a % 3);
+        }
+    "#);
+    assert!(ir_text.contains("ADD"), "Should contain ADD");
+    assert!(ir_text.contains("MUL"), "Should contain MUL");
+    assert!(ir_text.contains("SUB"), "Should contain SUB");
+    assert!(ir_text.contains("DIV"), "Should contain DIV");
+}
+

@@ -1,0 +1,12 @@
+entry:
+
+func_log_event:
+
+func_main:
+  PARAM 42
+  t1_1 = CALL print_val, 1
+  PARAM 1
+  t2_1 = CALL log_event, 1
+
+func_print_val:
+

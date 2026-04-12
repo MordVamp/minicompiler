@@ -3,5 +3,7 @@ fn compute(int a, float b) -> int {
     int x = 0;
     float y = 1.0;
     x = y;
+    int z = 0;
+    z = y;
     return true;
 }
