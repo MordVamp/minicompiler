@@ -1,5 +1,12 @@
 --- Symbol Table Dump ---
-Scope level 0:
-  factorial : Function of type fn(int) -> int
+Archived Scope 0 (Depth 3):
+Archived Scope 1 (Depth 2):
+Archived Scope 2 (Depth 1):
+  n : Variable of type int
+Archived Scope 3 (Depth 2):
+  result : Variable of type int
+Archived Scope 4 (Depth 1):
+Active Scope level 0:
   main : Function of type fn() -> void
+  factorial : Function of type fn(int) -> int
 -------------------------

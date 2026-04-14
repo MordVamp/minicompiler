@@ -140,20 +140,26 @@ cargo run -- ir --input <FILE> [--output <FILE>] [--verbose]
 | :--- | :--- | :--- | :--- | :--- |
 | `--input <FILE>` | `-i` | Yes | — | Path to the `.src` source file |
 | `--output <FILE>` | `-o` | No | stdout | Write IR output to this file |
+| `--format <FORMAT>` | `-f` | No | `text` | Output format: `text` or `dot` (CFG visualization) |
+| `--stats` | `-s` | No | false | Report IR statistics (instruction and block counts) |
 | `--verbose` | `-v` | No | false | Print a success message on completion |
 
 **Note:** If semantic analysis fails, IR generation is aborted and errors are printed.
 
 **Examples:**
 ```bash
-# Print IR to console
+# Print IR as Text to console
 cargo run -- ir --input examples/hello.src
+
+# Generate CFG in DOT format and render to PNG
+cargo run -- ir --input examples/hello.src --format dot --output cfg.dot
+dot -Tpng cfg.dot -o cfg.png
+
+# Report IR statistics (counts of instructions and blocks)
+cargo run -- ir --input examples/hello.src --stats
 
 # Save IR to file
 cargo run -- ir --input examples/hello.src --output output.ir
-
-# Verbose mode
-cargo run -- ir --input examples/hello.src --verbose
 ```
 
 **IR output format:**
@@ -182,7 +188,7 @@ cargo run -- dump --input <FILE>
 | `--input <FILE>` | `-i` | Yes | Path to the `.src` source file |
 
 **Output format:**
-Sequentially prints the output of `lex`, `parse`, `check --verbose`, and `ir`.
+Sequentially prints the output of `lex`, `parse`, `check --verbose`, and `ir`. The symbol table dump in this mode includes **Archived Scopes**, showing variables that have gone out of scope but were tracked during analysis.
 
 **Example:**
 ```bash

@@ -163,8 +163,15 @@ impl<'a> Scanner<'a> {
                     self.error_token(LexicalError::InvalidCharacter('|'))
                 }
             }
+            '.' => {
+                if self.peek().map_or(false, |c| c.is_ascii_digit()) {
+                    return self.number('.');
+                } else {
+                    return self.simple_token(TokenType::Dot);
+                }
+            }
             '"' => return self.string(),
-            _ if c.is_ascii_digit() || c == '.' => return self.number(c),
+            _ if c.is_ascii_digit() => return self.number(c),
             _ if is_identifier_start(c) => return self.identifier(),
             _ => self.error_token(LexicalError::InvalidCharacter(c)),
         }

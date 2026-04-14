@@ -53,8 +53,12 @@ enum Commands {
         input: PathBuf,
         #[arg(short, long)]
         output: Option<PathBuf>,
+        #[arg(long, value_enum, default_value_t = AstFormat::Text)]
+        format: AstFormat,
         #[arg(short, long)]
         verbose: bool,
+        #[arg(short, long)]
+        stats: bool,
     },
     /// Запуск всех тестов.
     Test,
@@ -72,7 +76,7 @@ fn main() -> Result<()> {
         Commands::Lex { input, output } => run_lexer(&input, output.as_ref()),
         Commands::Parse { input, output, ast_format, verbose } => run_parser(&input, output.as_ref(), ast_format, verbose),
         Commands::Check { input, verbose } => run_check(&input, verbose),
-        Commands::Ir { input, output, verbose } => run_ir(&input, output.as_ref(), verbose),
+        Commands::Ir { input, output, format, verbose, stats } => run_ir(&input, output.as_ref(), format, verbose, stats),
         Commands::Dump { input } => run_dump(&input),
         Commands::Test => run_tests(),
     }
@@ -191,7 +195,7 @@ fn run_check(input_path: &PathBuf, verbose: bool) -> Result<()> {
     Ok(())
 }
 
-fn run_ir(input_path: &PathBuf, output_path: Option<&PathBuf>, verbose: bool) -> Result<()> {
+fn run_ir(input_path: &PathBuf, output_path: Option<&PathBuf>, format: AstFormat, verbose: bool, stats: bool) -> Result<()> {
     let source = fs::read_to_string(input_path)?;
     let mut scanner = Scanner::new(&source);
     let mut tokens = Vec::new();
@@ -226,12 +230,51 @@ fn run_ir(input_path: &PathBuf, output_path: Option<&PathBuf>, verbose: bool) ->
     let mut ssa_builder = minicompiler::ir::ssa_constructor::SSAConstructor::new(ir_gen.blocks);
     ssa_builder.construct();
 
-    let mut output_str = String::from("--- IR Code (SSA Form) ---\n");
-    let mut keys: Vec<String> = ssa_builder.blocks.keys().cloned().collect();
-    keys.sort();
-    for key in keys {
-        output_str.push_str(&ssa_builder.blocks[&key].to_string());
-        output_str.push('\n');
+    let output_str = match format {
+        AstFormat::Text => {
+            let mut s = String::from("--- IR Code (SSA Form) ---\n");
+            let mut keys: Vec<String> = ssa_builder.blocks.keys().cloned().collect();
+            keys.sort();
+            for key in keys {
+                s.push_str(&ssa_builder.blocks[&key].to_string());
+                s.push('\n');
+            }
+            s
+        }
+        AstFormat::Dot => {
+            let mut s = String::from("digraph CFG {\n  node [shape=record];\n");
+            let mut keys: Vec<String> = ssa_builder.blocks.keys().cloned().collect();
+            keys.sort();
+            for key in &keys {
+                let bb = &ssa_builder.blocks[key];
+                let mut label = format!("{}:\\l", bb.label);
+                for inst in &bb.instructions {
+                    label.push_str(&format!("  {}\\l", format!("{}", inst).replace("\"", "\\\"")));
+                }
+                s.push_str(&format!("  {} [label=\"{{{}}}\"];\n", key.replace(".", "_"), label));
+                for succ in &bb.successors {
+                    s.push_str(&format!("  {} -> {};\n", key.replace(".", "_"), succ.replace(".", "_")));
+                }
+            }
+            s.push_str("}\n");
+            s
+        }
+        AstFormat::Json => {
+            // Placeholder for JSON or reuse serde if implemented for IR
+            String::from("JSON IR not implemented yet")
+        }
+    };
+
+    if stats {
+        let mut inst_count = 0;
+        let block_count = ssa_builder.blocks.len();
+        for bb in ssa_builder.blocks.values() {
+            inst_count += bb.instructions.len();
+        }
+        println!("=== IR Statistics ===");
+        println!("Number of basic blocks: {}", block_count);
+        println!("Number of instructions: {}", inst_count);
+        println!("=====================");
     }
 
     if verbose {

@@ -8,7 +8,7 @@ func_main:
   t2_1 = MUL t1_1, c_1
   t3_1 = DIV b_1, a_1
   t4_1 = SUB t2_1, t3_1
-  t5_1 = ADD a_1, 3
+  t5_1 = MOD a_1, 3
   t6_1 = ADD t4_1, t5_1
   res_1 = MOVE t6_1
 

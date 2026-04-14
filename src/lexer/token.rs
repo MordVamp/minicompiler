@@ -12,7 +12,7 @@ pub enum TokenType {
     Less, LessEqual, Greater, GreaterEqual, AndAnd, OrOr, Bang,
     PlusEqual, MinusEqual, StarEqual, SlashEqual, PlusPlus, MinusMinus,
     // Delimiters
-    LParen, RParen, LBrace, RBrace, LBracket, RBracket, Semicolon, Comma, Colon,
+    LParen, RParen, LBrace, RBrace, LBracket, RBracket, Semicolon, Comma, Colon, Dot,
     // Special
     EndOfFile, Error,
 }
@@ -68,6 +68,7 @@ impl fmt::Display for TokenType {
             TokenType::Semicolon => "SEMICOLON",
             TokenType::Comma => "COMMA",
             TokenType::Colon => "COLON",
+            TokenType::Dot => "DOT",
             TokenType::EndOfFile => "END_OF_FILE",
             TokenType::Error => "ERROR",
         };

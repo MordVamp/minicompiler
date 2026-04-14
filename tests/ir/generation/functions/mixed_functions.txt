@@ -2,7 +2,7 @@ entry:
 
 func_get_square:
   t1_1 = MUL n_0, n_0
-  RETURN t1_0
+  RETURN t1_1
 
 func_main:
   PARAM 4

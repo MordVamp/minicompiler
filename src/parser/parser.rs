@@ -396,15 +396,28 @@ impl Parser {
 
     fn parse_postfix(&mut self) -> Result<ExpressionNode, String> {
         let mut expr = self.parse_primary()?;
-        while self.match_token(&[TokenType::PlusPlus, TokenType::MinusMinus]) {
-            let operator = self.previous().token_type;
-            let pos = Position { line: self.previous().line, column: self.previous().column };
-            expr = ExpressionNode::Postfix {
-                target: Box::new(expr),
-                operator,
-                position: pos,
-                type_info: None,
-            };
+        loop {
+            if self.match_token(&[TokenType::PlusPlus, TokenType::MinusMinus]) {
+                let operator = self.previous().token_type;
+                let pos = Position { line: self.previous().line, column: self.previous().column };
+                expr = ExpressionNode::Postfix {
+                    target: Box::new(expr),
+                    operator,
+                    position: pos,
+                    type_info: None,
+                };
+            } else if self.match_token(&[TokenType::Dot]) {
+                let pos = self.current_position();
+                let member = self.consume(TokenType::Identifier, "Expected member name after '.'.")?.lexeme.clone();
+                expr = ExpressionNode::MemberAccess {
+                    target: Box::new(expr),
+                    member,
+                    position: pos,
+                    type_info: None,
+                };
+            } else {
+                break;
+            }
         }
         Ok(expr)
     }

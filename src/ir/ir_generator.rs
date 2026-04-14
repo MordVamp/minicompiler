@@ -9,6 +9,7 @@ pub struct IRGenerator {
     current_block: String,
     temp_counter: usize,
     label_counter: usize,
+    struct_fields: std::collections::HashMap<String, Vec<String>>,
 }
 
 impl IRGenerator {
@@ -20,6 +21,7 @@ impl IRGenerator {
             current_block: "entry".to_string(),
             temp_counter: 0,
             label_counter: 0,
+            struct_fields: std::collections::HashMap::new(),
         }
     }
 
@@ -34,13 +36,55 @@ impl IRGenerator {
     }
 
     fn switch_block(&mut self, label: String) {
+        let prev = self.current_block.clone();
         if !self.blocks.contains_key(&label) {
             self.blocks.insert(label.clone(), BasicBlock::new(label.clone()));
         }
-        self.current_block = label;
+        self.current_block = label.clone();
+        
+        // Link the new block to its predecessor if it's not a function start
+        if !label.starts_with("func_") && prev != "entry" {
+            if let Some(bb) = self.blocks.get_mut(&label) {
+                if !bb.predecessors.contains(&prev) {
+                    bb.predecessors.push(prev.clone());
+                }
+            }
+            if let Some(pbb) = self.blocks.get_mut(&prev) {
+                if !pbb.successors.contains(&label) {
+                    pbb.successors.push(label);
+                }
+            }
+        }
     }
 
     fn emit(&mut self, inst: IRInstruction) {
+        // Track jump targets to build CFG edges
+        let target = match &inst {
+            IRInstruction::Jump { label: Operand::Label { name } } => Some(name.clone()),
+            IRInstruction::JumpIfTrue { label: Operand::Label { name }, .. } => Some(name.clone()),
+            IRInstruction::JumpIfFalse { label: Operand::Label { name }, .. } => Some(name.clone()),
+            _ => None,
+        };
+
+        if let Some(t_lbl) = target {
+            let current = self.current_block.clone();
+            // Link current -> target
+            if let Some(pbb) = self.blocks.get_mut(&current) {
+                if !pbb.successors.contains(&t_lbl) {
+                    pbb.successors.push(t_lbl.clone());
+                }
+            }
+            // Ensure target block exists and link target -> current (pred)
+            if !self.blocks.contains_key(&t_lbl) {
+                self.blocks.insert(t_lbl.clone(), BasicBlock::new(t_lbl.clone()));
+            }
+            if let Some(tbb) = self.blocks.get_mut(&t_lbl) {
+                if !tbb.predecessors.contains(&current) {
+                    tbb.predecessors.push(current);
+                }
+            }
+        }
+
         if let Some(bb) = self.blocks.get_mut(&self.current_block) {
             bb.add_instruction(inst);
         }
@@ -59,7 +103,15 @@ impl IRGenerator {
                 self.switch_block(func_label);
                 self.visit_statement(body);
             }
-            DeclarationNode::StructDecl { .. } => {}
+            DeclarationNode::StructDecl { name, fields, .. } => {
+                let mut f_names = Vec::new();
+                for f in fields {
+                    if let StatementNode::VarDeclStmt { decl: DeclarationNode::VarDecl { name: fnm, .. }, .. } = f {
+                        f_names.push(fnm.clone());
+                    }
+                }
+                self.struct_fields.insert(name.clone(), f_names);
+            }
             DeclarationNode::VarDecl { name, initializer, .. } => {
                 if let Some(init) = initializer {
                     let src = self.visit_expression(init);
@@ -113,7 +165,58 @@ impl IRGenerator {
             StatementNode::VarDeclStmt { decl, .. } => {
                 self.visit_declaration(decl);
             }
-            _ => { /* While/For mapping to blocks omitted for brevity but follows similar jump logic */ }
+            StatementNode::WhileStmt { condition, body, .. } => {
+                let start_label = self.new_label("while_cond");
+                let body_label = self.new_label("while_body");
+                let end_label = self.new_label("while_end");
+
+                self.emit(IRInstruction::Jump { label: Operand::Label { name: start_label.clone() } });
+                
+                self.switch_block(start_label.clone());
+                let cond_op = self.visit_expression(condition);
+                self.emit(IRInstruction::JumpIfTrue { condition: cond_op, label: Operand::Label { name: body_label.clone() } });
+                self.emit(IRInstruction::Jump { label: Operand::Label { name: end_label.clone() } });
+
+                self.switch_block(body_label);
+                self.visit_statement(body);
+                self.emit(IRInstruction::Jump { label: Operand::Label { name: start_label } });
+
+                self.switch_block(end_label);
+            }
+            StatementNode::ForStmt { init, condition, update, body, .. } => {
+                let cond_label = self.new_label("for_cond");
+                let body_label = self.new_label("for_body");
+                let update_label = self.new_label("for_update");
+                let end_label = self.new_label("for_end");
+
+                if let Some(i) = init {
+                    self.visit_statement(i);
+                }
+
+                self.emit(IRInstruction::Jump { label: Operand::Label { name: cond_label.clone() } });
+                
+                self.switch_block(cond_label.clone());
+                if let Some(c) = condition {
+                    let cond_op = self.visit_expression(c);
+                    self.emit(IRInstruction::JumpIfTrue { condition: cond_op, label: Operand::Label { name: body_label.clone() } });
+                    self.emit(IRInstruction::Jump { label: Operand::Label { name: end_label.clone() } });
+                } else {
+                    self.emit(IRInstruction::Jump { label: Operand::Label { name: body_label.clone() } });
+                }
+
+                self.switch_block(body_label);
+                self.visit_statement(body);
+                self.emit(IRInstruction::Jump { label: Operand::Label { name: update_label.clone() } });
+
+                self.switch_block(update_label);
+                if let Some(u) = update {
+                    self.visit_expression(u);
+                }
+                self.emit(IRInstruction::Jump { label: Operand::Label { name: cond_label } });
+
+                self.switch_block(end_label);
+            }
+            StatementNode::Empty { .. } => {}
         }
     }
 
@@ -135,7 +238,27 @@ impl IRGenerator {
                     TokenType::Minus => IRInstruction::Sub { result: result.clone(), left: l_op, right: r_op },
                     TokenType::Star => IRInstruction::Mul { result: result.clone(), left: l_op, right: r_op },
                     TokenType::Slash => IRInstruction::Div { result: result.clone(), left: l_op, right: r_op },
-                    _ => IRInstruction::Add { result: result.clone(), left: l_op, right: r_op }, // Fallback for simplicity
+                    TokenType::Percent => IRInstruction::Mod { result: result.clone(), left: l_op, right: r_op },
+                    TokenType::AndAnd => IRInstruction::And { result: result.clone(), left: l_op, right: r_op },
+                    TokenType::OrOr => IRInstruction::Or { result: result.clone(), left: l_op, right: r_op },
+                    TokenType::EqualEqual => IRInstruction::Equal { result: result.clone(), left: l_op, right: r_op },
+                    TokenType::NotEqual => IRInstruction::NotEqual { result: result.clone(), left: l_op, right: r_op },
+                    TokenType::Less => IRInstruction::Less { result: result.clone(), left: l_op, right: r_op },
+                    TokenType::LessEqual => IRInstruction::LessEqual { result: result.clone(), left: l_op, right: r_op },
+                    TokenType::Greater => IRInstruction::Greater { result: result.clone(), left: l_op, right: r_op },
+                    TokenType::GreaterEqual => IRInstruction::GreaterEqual { result: result.clone(), left: l_op, right: r_op },
+                    _ => IRInstruction::Move { result: result.clone(), source: l_op }, // Should not happen with validation
+                };
+                self.emit(inst);
+                result
+            }
+            ExpressionNode::Unary { operator, operand, .. } => {
+                let op = self.visit_expression(operand);
+                let result = self.new_temp();
+                let inst = match operator {
+                    TokenType::Minus => IRInstruction::Neg { result: result.clone(), operand: op },
+                    TokenType::Bang => IRInstruction::Not { result: result.clone(), operand: op },
+                    _ => IRInstruction::Move { result: result.clone(), source: op },
                 };
                 self.emit(inst);
                 result
@@ -155,6 +278,26 @@ impl IRGenerator {
                 }
                 let result = self.new_temp();
                 self.emit(IRInstruction::Call { result: Some(result.clone()), callee: callee.clone(), num_args: arguments.len() });
+                result
+            }
+            ExpressionNode::MemberAccess { target, member, .. } => {
+                let base = self.visit_expression(target);
+                let struct_name = target.type_info().cloned().unwrap_or_default();
+                let offset = if let Some(fields) = self.struct_fields.get(&struct_name) {
+                    fields.iter().position(|f| f == member).unwrap_or(0)
+                } else {
+                    0
+                };
+                
+                let ptr = self.new_temp();
+                self.emit(IRInstruction::GetElementPtr { 
+                    result: ptr.clone(), 
+                    base, 
+                    offset: Operand::Literal { value: offset.to_string() } 
+                });
+                
+                let result = self.new_temp();
+                self.emit(IRInstruction::Load { result: result.clone(), address: ptr });
                 result
             }
             // Other expressions mapped to temps

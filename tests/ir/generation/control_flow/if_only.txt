@@ -4,8 +4,8 @@ entry:
 
 func_f:
   x_1 = MOVE 5
-  t1_1 = ADD x_1, 3
-  JUMP_IF_NOT t1_0 end_if_2
+  t1_1 = GREATER x_1, 3
+  JUMP_IF_NOT t1_1 end_if_2
 
 then_1:
   y_1 = MOVE x_1

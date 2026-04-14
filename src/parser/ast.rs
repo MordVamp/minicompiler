@@ -134,6 +134,12 @@ pub enum ExpressionNode {
         position: Position,
         type_info: Option<String>,
     },
+    MemberAccess {
+        target: Box<ExpressionNode>,
+        member: String,
+        position: Position,
+        type_info: Option<String>,
+    },
 }
 
 // ---------------------------------------------------------
@@ -380,6 +386,9 @@ impl ExpressionNode {
             ExpressionNode::Postfix { target, operator, .. } => {
                 format!("({}{})", target.to_pretty_string(0), Self::op_to_str(operator))
             }
+            ExpressionNode::MemberAccess { target, member, .. } => {
+                format!("{}.{}", target.to_pretty_string(0), member)
+            }
         };
         format!("{}{}", base, t_str)
     }
@@ -420,6 +429,10 @@ impl ExpressionNode {
                 out.push_str(&format!("  {} [label=\"Postfix {}\", color=orange];\n", my_id, Self::op_to_str(operator)));
                 target.to_dot(out, &my_id, id);
             }
+            ExpressionNode::MemberAccess { target, member, .. } => {
+                out.push_str(&format!("  {} [label=\"MemberAccess: .{}\"];\n", my_id, member));
+                target.to_dot(out, &my_id, id);
+            }
         }
     }
 }
@@ -434,6 +447,7 @@ impl ExpressionNode {
             ExpressionNode::Call { position, .. } => position,
             ExpressionNode::Assignment { position, .. } => position,
             ExpressionNode::Postfix { position, .. } => position,
+            ExpressionNode::MemberAccess { position, .. } => position,
         }
     }
 
@@ -446,6 +460,7 @@ impl ExpressionNode {
             ExpressionNode::Call { type_info, .. } => type_info.as_ref(),
             ExpressionNode::Assignment { type_info, .. } => type_info.as_ref(),
             ExpressionNode::Postfix { type_info, .. } => type_info.as_ref(),
+            ExpressionNode::MemberAccess { type_info, .. } => type_info.as_ref(),
         }
     }
 
@@ -458,6 +473,7 @@ impl ExpressionNode {
             ExpressionNode::Call { type_info, .. } => *type_info = Some(t),
             ExpressionNode::Assignment { type_info, .. } => *type_info = Some(t),
             ExpressionNode::Postfix { type_info, .. } => *type_info = Some(t),
+            ExpressionNode::MemberAccess { type_info, .. } => *type_info = Some(t),
         }
     }
 }

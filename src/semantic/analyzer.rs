@@ -8,6 +8,7 @@ pub struct SemanticAnalyzer {
     pub symbol_table: SymbolTable,
     pub errors: Vec<SemanticError>,
     current_function_return_type: Option<Type>,
+    struct_defs: std::collections::HashMap<String, std::collections::HashMap<String, Type>>,
 }
 
 impl SemanticAnalyzer {
@@ -16,6 +17,7 @@ impl SemanticAnalyzer {
             symbol_table: SymbolTable::new(),
             errors: Vec::new(),
             current_function_return_type: None,
+            struct_defs: std::collections::HashMap::new(),
         }
     }
 
@@ -62,6 +64,15 @@ impl SemanticAnalyzer {
                 if let Err(e) = self.symbol_table.define(name.clone(), SymbolKind::Struct, Type::Struct(name.clone()), position.line, position.column) {
                     self.report_error(position, e);
                 }
+                
+                let mut field_map = std::collections::HashMap::new();
+                for f in fields.iter_mut() {
+                    if let StatementNode::VarDeclStmt { decl: DeclarationNode::VarDecl { var_type, name: f_name, .. }, .. } = f {
+                        field_map.insert(f_name.clone(), Type::from_string(var_type));
+                    }
+                }
+                self.struct_defs.insert(name.clone(), field_map);
+
                 self.symbol_table.enter_scope();
                 for f in fields.iter_mut() {
                     self.visit_statement(f);
@@ -269,9 +280,69 @@ impl SemanticAnalyzer {
                     Type::Unknown
                 }
             }
+            ExpressionNode::MemberAccess { target, member, position, .. } => {
+                let target_ty = self.visit_expression(target);
+                if let Type::Struct(struct_name) = target_ty {
+                    if let Some(field_map) = self.struct_defs.get(&struct_name) {
+                        if let Some(field_ty) = field_map.get(member) {
+                            field_ty.clone()
+                        } else {
+                            self.report_error(position, format!("Struct '{}' has no field named '{}'", struct_name, member));
+                            Type::Unknown
+                        }
+                    } else {
+                        self.report_error(position, format!("Unknown struct type '{}'", struct_name));
+                        Type::Unknown
+                    }
+                } else if target_ty != Type::Unknown {
+                    self.report_error(position, format!("Cannot access member '{}' on non-struct type {}", member, target_ty.to_string()));
+                    Type::Unknown
+                } else {
+                    Type::Unknown
+                }
+            }
         };
 
         expr.set_type_info(ty.to_string());
+        
+        // Attempt constant folding after type info is set
+        if let ExpressionNode::Binary { left, operator, right, position, .. } = expr {
+            if let (ExpressionNode::Literal { value: l_val, .. }, ExpressionNode::Literal { value: r_val, .. }) = (&**left, &**right) {
+                if let Some(folded) = self.fold_binary(l_val, *operator, r_val) {
+                    *expr = ExpressionNode::Literal {
+                        value: folded,
+                        position: position.clone(),
+                        type_info: Some(ty.to_string()),
+                    };
+                }
+            }
+        }
+
         ty
+    }
+
+    fn fold_binary(&self, left: &crate::lexer::token::LiteralValue, op: TokenType, right: &crate::lexer::token::LiteralValue) -> Option<crate::lexer::token::LiteralValue> {
+        use crate::lexer::token::LiteralValue;
+        match (left, right) {
+            (LiteralValue::Integer(l), LiteralValue::Integer(r)) => {
+                match op {
+                    TokenType::Plus => Some(LiteralValue::Integer(l + r)),
+                    TokenType::Minus => Some(LiteralValue::Integer(l - r)),
+                    TokenType::Star => Some(LiteralValue::Integer(l * r)),
+                    TokenType::Slash if *r != 0 => Some(LiteralValue::Integer(l / r)),
+                    _ => None,
+                }
+            }
+            (LiteralValue::Float(l), LiteralValue::Float(r)) => {
+                match op {
+                    TokenType::Plus => Some(LiteralValue::Float(l + r)),
+                    TokenType::Minus => Some(LiteralValue::Float(l - r)),
+                    TokenType::Star => Some(LiteralValue::Float(l * r)),
+                    TokenType::Slash if *r != 0.0 => Some(LiteralValue::Float(l / r)),
+                    _ => None,
+                }
+            }
+            _ => None,
+        }
     }
 }

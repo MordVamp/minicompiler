@@ -6,10 +6,14 @@ MiniCompiler is a lexical and syntax analyzer for a C-like language, implemented
 
 - **Lexical Analysis**: Robust scanner following ANSI C lexical rules.
 - **Syntax Analysis**: Recursive descent parser building a comprehensive AST.
-- **Symbol Table**: Tracks identifier declarations, scopes, and types.
-- **Visualization**: Export AST to Text, JSON, and Graphviz (DOT) formats.
+- **Symbol Table**: Tracks identifier declarations, scopes, and types with historical retention.
+- **Semantic Analysis**: Type checking, validation, and constant folding.
+- **SSA IR Generation**: Produces Single Static Assignment IR with auto-inserted PHI nodes.
+- **Control Flow**: Full support for if-else, while, and for loops with explicit CFG edges.
+- **Struct Support**: Comprehensive struct definition and member access implementation.
+- **Visualization**: Export AST and CFG (IR) to Text, JSON, and Graphviz (DOT) formats.
 - **Error Handling**: Detailed error reporting with line/column tracking and recovery.
-- **Comprehensive Testing**: Automated test suite for lexer and parser logic.
+- **Comprehensive Testing**: Automated test suite for lexer, parser, semantic, and IR logic.
 
 ## Project Structure
 
@@ -38,9 +42,18 @@ cargo run -- lex --input examples/hello.src
 # Run the parser (outputs pretty-printed AST)
 cargo run -- parse --input examples/hello.src
 
-# Generate Graphviz visualization
-cargo run -- parse --input examples/hello.src --ast-format dot --output ast.dot
-dot -Tpng ast.dot -o ast.png
+# Run the IR generator (SSA form)
+cargo run -- ir --input examples/hello.src
+
+# Generate CFG visualization
+cargo run -- ir --input examples/hello.src --format dot --output cfg.dot
+dot -Tpng cfg.dot -o cfg.png
+
+# Report IR statistics
+cargo run -- ir --input examples/hello.src --stats
+
+# Dump all debug info (Tokens, AST, SymTable, IR)
+cargo run -- dump --input examples/hello.src
 ```
 
 ### Running Tests

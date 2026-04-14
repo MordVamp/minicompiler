@@ -12,19 +12,25 @@ The compiler is organized into modular components:
 - **Parser (`src/parser/`)**: Analyzes the token stream and builds an Abstract Syntax Tree (AST).
     - `parser.rs`: Recursive descent parser implementing the formal grammar.
     - `ast.rs`: Data structure representing the syntax tree with Graphviz and JSON export support.
-    - `symbol_table.rs`: Tracks identifiers, scopes, and types during parsing.
-- **CLI (`src/main.rs`)**: Provides a user-friendly interface to run the lexer, parser, and tests.
+    - **Semantic (`src/semantic/`)**: Validates the AST for type safety and scope rules.
+    - `analyzer.rs`: Implements type checking and constant folding.
+    - `types.rs`: Formal type system definitions.
+- **IR (`src/ir/`)**: Generates Single Static Assignment (SSA) Intermediate Representation.
+    - `ir_generator.rs`: Translates AST to linear IR instructions.
+    - `ssa_constructor.rs`: Performs versioning and PHI node insertion.
+    - `ir_instructions.rs`: Definitions of the IR instruction set.
+- **CLI (`src/main.rs`)**: Provides the unified interface for all stages, including full pipeline dumps and CFG visualization.
 
 ## 2. Compilation Workflow
 
-1.  **Lexical Analysis**: Source text is processed into `Token` objects. Each token tracks its lexeme, type, and source position (line/column).
-2.  **Syntax Analysis (Parsing)**: The `Parser` consumes tokens using LL(1) recursive descent.
-    - It builds an `ASTNode` hierarchy.
-    - It maintains a `SymbolTable` to detect re-declarations and track scopes.
-3.  **Visualization**: The AST can be exported to:
-    - **Text**: Indented tree view.
-    - **JSON**: Machine-readable format.
-    - **DOT**: Graphviz format for visual mapping.
+1.  **Lexical Analysis**: Source text is processed into `Token` objects with line/column tracking.
+2.  **Syntax Analysis (Parsing)**: The `Parser` builds the `ASTNode` hierarchy and initializes the `SymbolTable`.
+3.  **Semantic Analysis**: The `SemanticAnalyzer` decorates the AST with type information, performs constant folding, and checks for semantic errors (e.g., type mismatches, undefined symbols).
+4.  **IR Generation**: The `IRGenerator` lowers the AST into basic blocks.
+5.  **SSA Construction**: The `SSAConstructor` transforms the IR into Static Single Assignment form, automatically inserting PHI nodes at control-flow join points.
+6.  **Visualization & Export**:
+    - **AST**: Text, JSON, DOT formats.
+    - **IR/CFG**: Text, DOT (Visualization).
 
 ## 3. Grammar Adherence
 

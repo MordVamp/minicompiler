@@ -2,7 +2,7 @@ entry:
 
 func_add:
   t1_1 = ADD a_0, b_0
-  RETURN t1_0
+  RETURN t1_1
 
 func_main:
   PARAM 5
@@ -16,5 +16,5 @@ func_main:
 
 func_mul:
   t2_1 = MUL a_0, b_0
-  RETURN t2_0
+  RETURN t2_1
 

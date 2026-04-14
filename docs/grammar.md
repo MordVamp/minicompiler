@@ -54,7 +54,7 @@ Relational     ::= Additive ( ( "<" | "<=" | ">" | ">=" ) Additive )*
 Additive       ::= Multiplicative ( ( "+" | "-" ) Multiplicative )*
 Multiplicative ::= Unary ( ( "*" | "/" | "%" ) Unary )*
 Unary          ::= ( "!" | "-" | "++" | "--" ) Unary | Postfix
-Postfix        ::= Primary ( "++" | "--" )*
+Postfix        ::= Primary ( "++" | "--" | "." Identifier )*
 
 Primary        ::= IntLiteral 
                  | FloatLiteral 
@@ -77,7 +77,8 @@ ArgList        ::= Expression ("," Expression)*
 
 | Precedence Level | Operators | Associativity | Example |
 | :--- | :--- | :--- | :--- |
-| 1 (Highest) | `!`, `-` (Unary), `++`, `--` | Right (Prefix) / Left (Postfix) | `!a`, `++i`, `i--` |
+| 1 (Highest) | `.`, `++`, `--` (Postfix) | Left | `s.x`, `i++` |
+| 1b | `!`, `-` (Unary), `++`, `--` (Prefix) | Right | `!a`, `-x`, `++i` |
 | 2 | `*`, `/`, `%` | Left | `a * b / c` |
 | 3 | `+`, `-` | Left | `a + b - c` |
 | 4 | `<`, `<=`, `>`, `>=` | Non-Associative | `a < b` |

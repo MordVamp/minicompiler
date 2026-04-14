@@ -30,13 +30,58 @@ impl SSAConstructor {
     /// This implementation performs linear basic block SSA versioning.
     pub fn construct(&mut self) {
         let mut keys: Vec<String> = self.blocks.keys().cloned().collect();
-        keys.sort(); // Process in basic deterministic order
+        keys.sort(); 
         
-        // Simple pessimistic versioning pass (simulating SSA across bb without full DF)
+        let mut block_exit_versions: HashMap<String, HashMap<String, usize>> = HashMap::new();
+
         for key in keys {
             let mut bb = self.blocks.remove(&key).unwrap();
-            let mut new_instructions = Vec::new();
+            
+            // 1. Insert PHI nodes if there are multiple predecessors with different versions
+            if bb.predecessors.len() > 1 {
+                let mut vars_to_phi = std::collections::HashSet::new();
+                for pred in &bb.predecessors {
+                    if let Some(versions) = block_exit_versions.get(pred) {
+                        for (var, _) in versions {
+                            vars_to_phi.insert(var.clone());
+                        }
+                    }
+                }
 
+                for var in vars_to_phi {
+                    let mut sources = Vec::new();
+                    let mut different = false;
+                    let mut first_v = None;
+                    
+                    for pred in &bb.predecessors {
+                        if let Some(versions) = block_exit_versions.get(pred) {
+                            let v = *versions.get(&var).unwrap_or(&0);
+                            sources.push((Operand::Var { name: var.clone(), version: v }, pred.clone()));
+                            if first_v.is_none() { first_v = Some(v); }
+                            else if first_v != Some(v) { different = true; }
+                        }
+                    }
+
+                    if different {
+                        let new_v = self.new_version(&var);
+                        let phi_node = IRInstruction::Phi { 
+                            result: Operand::Var { name: var.clone(), version: new_v },
+                            sources 
+                        };
+                        bb.instructions.insert(0, phi_node);
+                    }
+                }
+            } else if bb.predecessors.len() == 1 {
+                // Inherit versions from the single predecessor
+                if let Some(versions) = block_exit_versions.get(&bb.predecessors[0]) {
+                    for (var, ver) in versions {
+                        self.counters.insert(var.clone(), *ver);
+                    }
+                }
+            }
+
+            // 2. Linear versioning of instructions
+            let mut new_instructions = Vec::new();
             for inst in bb.instructions {
                 let ssa_inst = match inst {
                     IRInstruction::Move { result, source } => {
@@ -68,6 +113,96 @@ impl SSAConstructor {
                         let res = self.version_operand_write(&result);
                         IRInstruction::Div { result: res, left: l, right: r }
                     }
+                    IRInstruction::Mod { result, left, right } => {
+                        let l = self.version_operand_read(&left);
+                        let r = self.version_operand_read(&right);
+                        let res = self.version_operand_write(&result);
+                        IRInstruction::Mod { result: res, left: l, right: r }
+                    }
+                    IRInstruction::And { result, left, right } => {
+                        let l = self.version_operand_read(&left);
+                        let r = self.version_operand_read(&right);
+                        let res = self.version_operand_write(&result);
+                        IRInstruction::And { result: res, left: l, right: r }
+                    }
+                    IRInstruction::Or { result, left, right } => {
+                        let l = self.version_operand_read(&left);
+                        let r = self.version_operand_read(&right);
+                        let res = self.version_operand_write(&result);
+                        IRInstruction::Or { result: res, left: l, right: r }
+                    }
+                    IRInstruction::Xor { result, left, right } => {
+                        let l = self.version_operand_read(&left);
+                        let r = self.version_operand_read(&right);
+                        let res = self.version_operand_write(&result);
+                        IRInstruction::Xor { result: res, left: l, right: r }
+                    }
+                    IRInstruction::Not { result, operand } => {
+                        let op = self.version_operand_read(&operand);
+                        let res = self.version_operand_write(&result);
+                        IRInstruction::Not { result: res, operand: op }
+                    }
+                    IRInstruction::Neg { result, operand } => {
+                        let op = self.version_operand_read(&operand);
+                        let res = self.version_operand_write(&result);
+                        IRInstruction::Neg { result: res, operand: op }
+                    }
+                    IRInstruction::Equal { result, left, right } => {
+                        let l = self.version_operand_read(&left);
+                        let r = self.version_operand_read(&right);
+                        let res = self.version_operand_write(&result);
+                        IRInstruction::Equal { result: res, left: l, right: r }
+                    }
+                    IRInstruction::NotEqual { result, left, right } => {
+                        let l = self.version_operand_read(&left);
+                        let r = self.version_operand_read(&right);
+                        let res = self.version_operand_write(&result);
+                        IRInstruction::NotEqual { result: res, left: l, right: r }
+                    }
+                    IRInstruction::Less { result, left, right } => {
+                        let l = self.version_operand_read(&left);
+                        let r = self.version_operand_read(&right);
+                        let res = self.version_operand_write(&result);
+                        IRInstruction::Less { result: res, left: l, right: r }
+                    }
+                    IRInstruction::LessEqual { result, left, right } => {
+                        let l = self.version_operand_read(&left);
+                        let r = self.version_operand_read(&right);
+                        let res = self.version_operand_write(&result);
+                        IRInstruction::LessEqual { result: res, left: l, right: r }
+                    }
+                    IRInstruction::Greater { result, left, right } => {
+                        let l = self.version_operand_read(&left);
+                        let r = self.version_operand_read(&right);
+                        let res = self.version_operand_write(&result);
+                        IRInstruction::Greater { result: res, left: l, right: r }
+                    }
+                    IRInstruction::GreaterEqual { result, left, right } => {
+                        let l = self.version_operand_read(&left);
+                        let r = self.version_operand_read(&right);
+                        let res = self.version_operand_write(&result);
+                        IRInstruction::GreaterEqual { result: res, left: l, right: r }
+                    }
+                    IRInstruction::Load { result, address } => {
+                        let addr = self.version_operand_read(&address);
+                        let res = self.version_operand_write(&result);
+                        IRInstruction::Load { result: res, address: addr }
+                    }
+                    IRInstruction::Store { address, source } => {
+                        let addr = self.version_operand_read(&address);
+                        let src = self.version_operand_read(&source);
+                        IRInstruction::Store { address: addr, source: src }
+                    }
+                    IRInstruction::Alloca { result, size } => {
+                        let res = self.version_operand_write(&result);
+                        IRInstruction::Alloca { result: res, size }
+                    }
+                    IRInstruction::GetElementPtr { result, base, offset } => {
+                        let b = self.version_operand_read(&base);
+                        let o = self.version_operand_read(&offset);
+                        let res = self.version_operand_write(&result);
+                        IRInstruction::GetElementPtr { result: res, base: b, offset: o }
+                    }
                     IRInstruction::Param { value } => {
                         IRInstruction::Param { value: self.version_operand_read(&value) }
                     }
@@ -78,12 +213,30 @@ impl SSAConstructor {
                             IRInstruction::Call { result: None, callee, num_args }
                         }
                     }
-                    // For brevity, other instructions map identically.
+                    IRInstruction::Return { value } => {
+                        if let Some(v) = value {
+                            IRInstruction::Return { value: Some(self.version_operand_read(&v)) }
+                        } else {
+                            IRInstruction::Return { value: None }
+                        }
+                    }
+                    IRInstruction::JumpIfTrue { condition, label } => {
+                        IRInstruction::JumpIfTrue { condition: self.version_operand_read(&condition), label }
+                    }
+                    IRInstruction::JumpIfFalse { condition, label } => {
+                        IRInstruction::JumpIfFalse { condition: self.version_operand_read(&condition), label }
+                    }
+                    IRInstruction::Phi { result, sources } => {
+                        let res_ssa = self.version_operand_write(&result);
+                        let sources_ssa = sources.iter().map(|(op, b)| (self.version_operand_read(op), b.clone())).collect();
+                        IRInstruction::Phi { result: res_ssa, sources: sources_ssa }
+                    }
                     _ => inst,
                 };
                 new_instructions.push(ssa_inst);
             }
 
+            block_exit_versions.insert(key.clone(), self.counters.clone());
             bb.instructions = new_instructions;
             self.blocks.insert(key, bb);
         }

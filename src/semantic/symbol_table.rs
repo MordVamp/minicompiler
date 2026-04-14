@@ -19,12 +19,14 @@ pub struct Symbol {
 
 pub struct SymbolTable {
     scopes: Vec<HashMap<String, Symbol>>,
+    archived_scopes: Vec<(usize, HashMap<String, Symbol>)>,
 }
 
 impl SymbolTable {
     pub fn new() -> Self {
         Self {
             scopes: vec![HashMap::new()],
+            archived_scopes: Vec::new(),
         }
     }
 
@@ -34,7 +36,9 @@ impl SymbolTable {
 
     pub fn exit_scope(&mut self) {
         if self.scopes.len() > 1 {
-            self.scopes.pop();
+            let level = self.scopes.len() - 1;
+            let scope = self.scopes.pop().unwrap();
+            self.archived_scopes.push((level, scope));
         }
     }
 
@@ -70,8 +74,18 @@ impl SymbolTable {
     pub fn dump(&self) -> String {
         let mut out = String::new();
         out.push_str("--- Symbol Table Dump ---\n");
+        
+        // Show archived scopes (local variables from exited blocks/functions)
+        for (i, (level, scope)) in self.archived_scopes.iter().enumerate() {
+            out.push_str(&format!("Archived Scope {} (Depth {}):\n", i, level));
+            for (name, symbol) in scope {
+                out.push_str(&format!("  {} : {:?} of type {}\n", name, symbol.kind, symbol.typ.to_string()));
+            }
+        }
+
+        // Show remaining active scopes (usually just global level 0 at the end)
         for (i, scope) in self.scopes.iter().enumerate() {
-            out.push_str(&format!("Scope level {}:\n", i));
+            out.push_str(&format!("Active Scope level {}:\n", i));
             for (name, symbol) in scope {
                 out.push_str(&format!("  {} : {:?} of type {}\n", name, symbol.kind, symbol.typ.to_string()));
             }

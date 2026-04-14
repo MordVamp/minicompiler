@@ -1,4 +1,9 @@
 --- Symbol Table Dump ---
-Scope level 0:
+Archived Scope 0 (Depth 3):
+  inner : Variable of type int
+Archived Scope 1 (Depth 2):
+  i : Variable of type int
+Archived Scope 2 (Depth 1):
+Active Scope level 0:
   f : Function of type fn() -> void
 -------------------------
