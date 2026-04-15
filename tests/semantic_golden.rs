@@ -106,7 +106,7 @@ fn normalize_dump(text: &str) -> Vec<String> {
     let mut in_scope = false;
 
     for line in text.trim().lines() {
-        if line.starts_with("Scope level") {
+        if line.contains("Scope") && line.ends_with(':') {
             // Flush any accumulated entries from the previous scope block.
             if in_scope {
                 current_scope_entries.sort();

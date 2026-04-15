@@ -348,7 +348,6 @@ fn test_integration_nested_scopes_ok() {
 
 #[test]
 fn test_integration_decorated_ast_has_type_info() {
-    use minicompiler::parser::ast::ExpressionNode;
 
     let src = "fn f() -> void { int x = 42; }";
     let mut parser = Parser::new(tokens(src));
