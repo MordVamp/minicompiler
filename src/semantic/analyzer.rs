@@ -21,6 +21,23 @@ impl SemanticAnalyzer {
         }
     }
 
+    /// Проверка недостижимого кода после return
+    fn check_unreachable_code(&mut self, body: &StatementNode) {
+        if let StatementNode::Block { statements, .. } = body {
+            let mut unreachable = false;
+            for stmt in statements {
+                if unreachable {
+                    let pos = stmt.position().clone();
+                    self.report_error(&pos, "Unreachable statement after `return`".to_string());
+                }
+                if let StatementNode::ReturnStmt { .. } = stmt {
+                    unreachable = true;
+                }
+                // Для простоты не обрабатываем вложенные блоки, но при желании можно добавить рекурсию
+            }
+        }
+    }
+
     fn report_error(&mut self, pos: &Position, msg: String) {
         self.errors.push(SemanticError::new(msg, pos.clone()));
     }
@@ -55,6 +72,10 @@ impl SemanticAnalyzer {
                 }
 
                 self.current_function_return_type = Some(ret_ty);
+                
+                // Проверка недостижимого кода после return
+                self.check_unreachable_code(body);
+                
                 self.visit_statement(body);
                 self.current_function_return_type = None;
 
@@ -343,6 +364,21 @@ impl SemanticAnalyzer {
                 }
             }
             _ => None,
+        }
+    }
+}
+
+impl StatementNode {
+    pub fn position(&self) -> &Position {
+        match self {
+            StatementNode::Block { position, .. } => position,
+            StatementNode::ExprStmt { position, .. } => position,
+            StatementNode::IfStmt { position, .. } => position,
+            StatementNode::WhileStmt { position, .. } => position,
+            StatementNode::ForStmt { position, .. } => position,
+            StatementNode::ReturnStmt { position, .. } => position,
+            StatementNode::VarDeclStmt { position, .. } => position,
+            StatementNode::Empty { position } => position,
         }
     }
 }
