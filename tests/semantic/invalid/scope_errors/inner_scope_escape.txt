@@ -1,0 +1,1 @@
+Semantic Error at line 5, column 5: Undefined variable 'x' in assignment

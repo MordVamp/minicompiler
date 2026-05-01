@@ -1,0 +1,1 @@
+Semantic Error at line 1, column 4: Missing return statement in function returning int

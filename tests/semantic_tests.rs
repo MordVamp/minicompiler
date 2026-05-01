@@ -308,6 +308,31 @@ fn test_err_multiple_type_mismatches() {
     );
 }
 
+#[test]
+fn test_err_unreachable_code() {
+    let (ok, errors) = analyze(
+        "fn f() -> void { \
+           return; \
+           int x = 1; \
+         }"
+    );
+    assert!(!ok, "Unreachable code after return must be an error");
+    assert!(
+        errors.iter().any(|e| e.to_lowercase().contains("unreachable")),
+        "Expected 'unreachable' error, got: {:?}", errors
+    );
+}
+
+#[test]
+fn test_err_missing_return() {
+    let (ok, errors) = analyze("fn f() -> int { int x = 1; }");
+    assert!(!ok, "Missing return in int function must be an error");
+    assert!(
+        errors.iter().any(|e| e.to_lowercase().contains("missing return")),
+        "Expected 'missing return' error, got: {:?}", errors
+    );
+}
+
 // ════════════════════════════════════════════════════════════
 // Integration — full pipeline lex → parse → semantic
 // ════════════════════════════════════════════════════════════

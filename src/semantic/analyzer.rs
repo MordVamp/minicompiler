@@ -21,7 +21,6 @@ impl SemanticAnalyzer {
         }
     }
 
-    /// Проверка недостижимого кода после return
     fn check_unreachable_code(&mut self, body: &StatementNode) {
         if let StatementNode::Block { statements, .. } = body {
             let mut unreachable = false;
@@ -35,6 +34,31 @@ impl SemanticAnalyzer {
                 }
                 // Для простоты не обрабатываем вложенные блоки, но при желании можно добавить рекурсию
             }
+        }
+    }
+
+    fn check_missing_return(&mut self, body: &StatementNode, ret_ty: &Type, position: &Position) {
+        if *ret_ty == Type::Void || *ret_ty == Type::Unknown {
+            return;
+        }
+        
+        if !self.has_return_statement(body) {
+            self.report_error(position, format!("Missing return statement in function returning {}", ret_ty.to_string()));
+        }
+    }
+
+    fn has_return_statement(&self, stmt: &StatementNode) -> bool {
+        match stmt {
+            StatementNode::Block { statements, .. } => {
+                statements.iter().any(|s| self.has_return_statement(s))
+            }
+            StatementNode::IfStmt { then_branch, else_branch, .. } => {
+                let then_ret = self.has_return_statement(then_branch);
+                let else_ret = else_branch.as_ref().map_or(false, |eb| self.has_return_statement(eb));
+                then_ret && else_ret
+            }
+            StatementNode::ReturnStmt { .. } => true,
+            _ => false,
         }
     }
 
@@ -71,10 +95,13 @@ impl SemanticAnalyzer {
                     }
                 }
 
-                self.current_function_return_type = Some(ret_ty);
+                self.current_function_return_type = Some(ret_ty.clone());
                 
                 // Проверка недостижимого кода после return
                 self.check_unreachable_code(body);
+                
+                // Проверка на наличие return
+                self.check_missing_return(body, &ret_ty, position);
                 
                 self.visit_statement(body);
                 self.current_function_return_type = None;

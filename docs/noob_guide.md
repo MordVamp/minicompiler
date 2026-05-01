@@ -29,6 +29,9 @@ Your source code (.src file)
         │
         ▼
    [PHASE 4: IR GEN]  — Translates the tree into a simple instruction list (the blueprint)
+        │
+        ▼
+   [PHASE 5: CODEGEN] — Produces real x86-64 assembly you can actually run!
 ```
 
 ---
@@ -250,6 +253,33 @@ Save the IR to a file:
 ```bash
 cargo run -- ir --input my_program.src --output my_program.ir
 ```
+
+---
+
+## Step 5: Compilation (Real Assembly!)
+
+This is the final frontier. The compiler takes the IR blueprint and generates **x86-64 assembly** — the language understood by your CPU.
+
+```bash
+cargo run -- compile --input my_program.src --output my_program.asm
+```
+
+**What does it look like?**
+It's much lower-level than our source code:
+```nasm
+main:
+  push rbp
+  mov rbp, rsp
+  mov rax, 5
+  add rax, 3
+  pop rbp
+  ret
+```
+
+To actually run this, you'll need an **Assembler** (like NASM) and a **Linker**:
+1. **Assemble**: `nasm -f elf64 my_program.asm -o my_program.o`
+2. **Link**: `ld my_program.o runtime.o -o my_program`
+3. **Run**: `./my_program`
 
 ---
 

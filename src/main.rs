@@ -60,6 +60,15 @@ enum Commands {
         #[arg(short, long)]
         stats: bool,
     },
+    /// Компиляция в x86-64 ассемблер (Sprint 5-6).
+    Compile {
+        #[arg(short, long)]
+        input: PathBuf,
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        #[arg(short, long)]
+        verbose: bool,
+    },
     /// Запуск всех тестов.
     Test,
     /// Полный дамп всех этапов компиляции (Токены, AST, Символы, IR).
@@ -77,6 +86,7 @@ fn main() -> Result<()> {
         Commands::Parse { input, output, ast_format, verbose } => run_parser(&input, output.as_ref(), ast_format, verbose),
         Commands::Check { input, verbose } => run_check(&input, verbose),
         Commands::Ir { input, output, format, verbose, stats } => run_ir(&input, output.as_ref(), format, verbose, stats),
+        Commands::Compile { input, output, verbose } => run_compile(&input, output.as_ref(), verbose),
         Commands::Dump { input } => run_dump(&input),
         Commands::Test => run_tests(),
     }
@@ -346,6 +356,55 @@ fn run_dump(input_path: &PathBuf) -> Result<()> {
     keys.sort();
     for key in keys {
         println!("{}", ssa_builder.blocks[&key].to_string());
+    }
+
+    Ok(())
+}
+fn run_compile(input_path: &PathBuf, output_path: Option<&PathBuf>, verbose: bool) -> Result<()> {
+    let source = fs::read_to_string(input_path)?;
+    let mut scanner = Scanner::new(&source);
+    let mut tokens = Vec::new();
+    loop {
+        let token = scanner.next_token();
+        let is_eof = token.token_type == TokenType::EndOfFile;
+        tokens.push(token);
+        if is_eof { break; }
+    }
+
+    let mut parser = Parser::new(tokens);
+    let mut ast = match parser.parse() {
+        Ok(ast) => ast,
+        Err(e) => {
+            eprintln!("Ошибка парсинга: {}", e);
+            std::process::exit(1);
+        }
+    };
+
+    let mut analyzer = minicompiler::semantic::analyzer::SemanticAnalyzer::new();
+    if !analyzer.analyze(&mut ast) {
+        eprintln!("Семантический анализ выявил ошибки. Компиляция отменена.");
+        for err in analyzer.errors {
+            eprintln!("{}", err);
+        }
+        std::process::exit(1);
+    }
+
+    let mut ir_gen = minicompiler::ir::ir_generator::IRGenerator::new();
+    ir_gen.generate(&ast);
+
+    let mut ssa_builder = minicompiler::ir::ssa_constructor::SSAConstructor::new(ir_gen.blocks);
+    ssa_builder.construct();
+
+    let mut codegen = minicompiler::codegen::X86Generator::new(ssa_builder.blocks, ir_gen.functions);
+    let asm = codegen.generate();
+
+    if verbose {
+        println!("Генерация кода x86-64 завершена успешно.");
+    }
+
+    match output_path {
+        Some(path) => fs::write(path, asm)?,
+        None => print!("{}", asm),
     }
 
     Ok(())

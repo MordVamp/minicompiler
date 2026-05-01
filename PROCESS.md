@@ -19,6 +19,11 @@ The compiler is organized into modular components:
     - `ir_generator.rs`: Translates AST to linear IR instructions.
     - `ssa_constructor.rs`: Performs versioning and PHI node insertion.
     - `ir_instructions.rs`: Definitions of the IR instruction set.
+- **Codegen (`src/codegen/`)**: Translates IR into x86-64 assembly.
+    - `x86_generator.rs`: Assembly emission following System V ABI.
+    - `abi.rs`: Register usage and calling convention definitions.
+    - `stack_frame.rs`: Stack alignment and frame allocation logic.
+- **Runtime (`src/runtime/`)**: Minimal assembly library for system calls and I/O.
 - **CLI (`src/main.rs`)**: Provides the unified interface for all stages, including full pipeline dumps and CFG visualization.
 
 ## 2. Compilation Workflow
@@ -28,7 +33,8 @@ The compiler is organized into modular components:
 3.  **Semantic Analysis**: The `SemanticAnalyzer` decorates the AST with type information, performs constant folding, and checks for semantic errors (e.g., type mismatches, undefined symbols).
 4.  **IR Generation**: The `IRGenerator` lowers the AST into basic blocks.
 5.  **SSA Construction**: The `SSAConstructor` transforms the IR into Static Single Assignment form, automatically inserting PHI nodes at control-flow join points.
-6.  **Visualization & Export**:
+6.  **Code Generation**: The `X86Generator` translates the SSA IR into x86-64 NASM assembly, handling function prologues, epilogues, and register-based parameter passing.
+7.  **Visualization & Export**:
     - **AST**: Text, JSON, DOT formats.
     - **IR/CFG**: Text, DOT (Visualization).
 

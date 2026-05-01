@@ -1,1 +1,3 @@
-fn f() -> void { int x = 5; float y = 3.0; x = y; }
+fn main() -> void {
+    int x = 1.5;
+}

@@ -12,4 +12,3 @@ func_main:
   t3_1 = CALL print_result, 1
 
 func_print_result:
-

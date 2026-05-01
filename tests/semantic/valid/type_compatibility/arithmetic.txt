@@ -1,7 +1,7 @@
 --- Symbol Table Dump ---
 Archived Scope 0 (Depth 2):
-  a : Variable of type int
   b : Variable of type int
+  a : Variable of type int
   c : Variable of type int
 Archived Scope 1 (Depth 1):
 Active Scope level 0:

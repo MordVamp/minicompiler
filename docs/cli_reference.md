@@ -175,6 +175,34 @@ func_main:
 
 ---
 
+### `compile` — Generate x86-64 Assembly (Sprint 5-6)
+
+Runs the full pipeline and generates x86-64 assembly code in NASM syntax.
+
+```
+cargo run -- compile --input <FILE> [--output <FILE>] [--verbose]
+```
+
+| Flag | Short | Required | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `--input <FILE>` | `-i` | Yes | — | Path to the `.src` source file |
+| `--output <FILE>` | `-o` | No | stdout | Write assembly output to this file |
+| `--verbose` | `-v` | No | false | Print success message |
+
+**Example:**
+```bash
+# Generate assembly and save to file
+cargo run -- compile --input examples/hello.src --output hello.asm
+
+# Assemble and link with runtime
+nasm -f elf64 hello.asm -o hello.o
+nasm -f elf64 src/runtime/runtime.asm -o runtime.o
+ld hello.o runtime.o -o hello
+./hello
+```
+
+---
+
 ### `dump` — Full Compiler Dump
 
 Outputs everything: Tokens, AST, Symbol Table, and SSA-form IR. Useful for debugging and learning.
@@ -221,6 +249,7 @@ cargo test
 | `cargo test --test ir_golden` | Run only Sprint 4 golden file tests |
 | `cargo test --test semantic_tests` | Run only Sprint 3 unit tests |
 | `cargo test --test ir_tests` | Run only Sprint 4 unit tests |
+| `cargo test --test codegen_tests` | Run only Sprint 5-6 codegen tests |
 | `cargo test --test test_runner` | Run only Sprint 1 lexer golden tests |
 | `UPDATE_EXPECT=1 cargo test --test semantic_golden` | Regenerate Sprint 3 golden `.txt` files |
 | `UPDATE_EXPECT=1 cargo test --test ir_golden` | Regenerate Sprint 4 golden `.txt` files |

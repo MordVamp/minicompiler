@@ -4,8 +4,15 @@ use crate::ir::ir_instructions::{IRInstruction, Operand};
 use crate::ir::basic_block::BasicBlock;
 use std::collections::HashMap;
 
+#[derive(Clone)]
+pub struct FunctionMetadata {
+    pub name: String,
+    pub parameters: Vec<String>,
+}
+
 pub struct IRGenerator {
     pub blocks: HashMap<String, BasicBlock>,
+    pub functions: Vec<FunctionMetadata>,
     current_block: String,
     temp_counter: usize,
     label_counter: usize,
@@ -18,6 +25,7 @@ impl IRGenerator {
         blocks.insert("entry".to_string(), BasicBlock::new("entry".to_string()));
         Self {
             blocks,
+            functions: Vec::new(),
             current_block: "entry".to_string(),
             temp_counter: 0,
             label_counter: 0,
@@ -98,8 +106,10 @@ impl IRGenerator {
 
     fn visit_declaration(&mut self, decl: &DeclarationNode) {
         match decl {
-            DeclarationNode::FunctionDecl { name, body, .. } => {
+            DeclarationNode::FunctionDecl { name, body, parameters, .. } => {
                 let func_label = format!("func_{}", name);
+                let param_names = parameters.iter().map(|p| p.name.clone()).collect();
+                self.functions.push(FunctionMetadata { name: name.clone(), parameters: param_names });
                 self.switch_block(func_label);
                 self.visit_statement(body);
             }
@@ -229,6 +239,44 @@ impl IRGenerator {
                 Operand::Var { name: name.clone(), version: 0 }
             }
             ExpressionNode::Binary { left, operator, right, .. } => {
+                if *operator == TokenType::AndAnd {
+                    let false_lbl = self.new_label("and_false");
+                    let end_lbl = self.new_label("and_end");
+                    let result = self.new_temp();
+                    
+                    let l_op = self.visit_expression(left);
+                    self.emit(IRInstruction::JumpIfFalse { condition: l_op, label: Operand::Label { name: false_lbl.clone() } });
+                    
+                    let r_op = self.visit_expression(right);
+                    self.emit(IRInstruction::Move { result: result.clone(), source: r_op });
+                    self.emit(IRInstruction::Jump { label: Operand::Label { name: end_lbl.clone() } });
+                    
+                    self.switch_block(false_lbl);
+                    self.emit(IRInstruction::Move { result: result.clone(), source: Operand::Literal { value: "0".to_string() } });
+                    self.emit(IRInstruction::Jump { label: Operand::Label { name: end_lbl.clone() } });
+                    
+                    self.switch_block(end_lbl);
+                    return result;
+                } else if *operator == TokenType::OrOr {
+                    let true_lbl = self.new_label("or_true");
+                    let end_lbl = self.new_label("or_end");
+                    let result = self.new_temp();
+                    
+                    let l_op = self.visit_expression(left);
+                    self.emit(IRInstruction::JumpIfTrue { condition: l_op, label: Operand::Label { name: true_lbl.clone() } });
+                    
+                    let r_op = self.visit_expression(right);
+                    self.emit(IRInstruction::Move { result: result.clone(), source: r_op });
+                    self.emit(IRInstruction::Jump { label: Operand::Label { name: end_lbl.clone() } });
+                    
+                    self.switch_block(true_lbl);
+                    self.emit(IRInstruction::Move { result: result.clone(), source: Operand::Literal { value: "1".to_string() } });
+                    self.emit(IRInstruction::Jump { label: Operand::Label { name: end_lbl.clone() } });
+                    
+                    self.switch_block(end_lbl);
+                    return result;
+                }
+
                 let l_op = self.visit_expression(left);
                 let r_op = self.visit_expression(right);
                 let result = self.new_temp();
@@ -239,15 +287,13 @@ impl IRGenerator {
                     TokenType::Star => IRInstruction::Mul { result: result.clone(), left: l_op, right: r_op },
                     TokenType::Slash => IRInstruction::Div { result: result.clone(), left: l_op, right: r_op },
                     TokenType::Percent => IRInstruction::Mod { result: result.clone(), left: l_op, right: r_op },
-                    TokenType::AndAnd => IRInstruction::And { result: result.clone(), left: l_op, right: r_op },
-                    TokenType::OrOr => IRInstruction::Or { result: result.clone(), left: l_op, right: r_op },
                     TokenType::EqualEqual => IRInstruction::Equal { result: result.clone(), left: l_op, right: r_op },
                     TokenType::NotEqual => IRInstruction::NotEqual { result: result.clone(), left: l_op, right: r_op },
                     TokenType::Less => IRInstruction::Less { result: result.clone(), left: l_op, right: r_op },
                     TokenType::LessEqual => IRInstruction::LessEqual { result: result.clone(), left: l_op, right: r_op },
                     TokenType::Greater => IRInstruction::Greater { result: result.clone(), left: l_op, right: r_op },
                     TokenType::GreaterEqual => IRInstruction::GreaterEqual { result: result.clone(), left: l_op, right: r_op },
-                    _ => IRInstruction::Move { result: result.clone(), source: l_op }, // Should not happen with validation
+                    _ => IRInstruction::Move { result: result.clone(), source: l_op },
                 };
                 self.emit(inst);
                 result

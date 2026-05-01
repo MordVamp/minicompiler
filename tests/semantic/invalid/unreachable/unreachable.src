@@ -1,0 +1,4 @@
+fn f() -> void {
+    return;
+    int x = 1;
+}
