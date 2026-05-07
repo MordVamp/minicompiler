@@ -188,6 +188,10 @@ cargo run -- compile --input <FILE> [--output <FILE>] [--verbose]
 | `--input <FILE>` | `-i` | Yes | — | Path to the `.src` source file |
 | `--output <FILE>` | `-o` | No | stdout | Write assembly output to this file |
 | `--verbose` | `-v` | No | false | Print success message |
+| `--optimize` | `-O` | No | false | Show assembly before and after optimization |
+
+| `--stdout` | `-s` | No | false | Print assembly to console (overrides output file) |
+
 
 **Example:**
 ```bash

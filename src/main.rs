@@ -1,4 +1,5 @@
 use anyhow::Result;
+use minicompiler::codegen::optimizer::PeepholeOptimizer;
 use clap::{Parser as ClapParser, Subcommand, ValueEnum};
 use minicompiler::lexer::{Scanner, TokenType};
 use minicompiler::parser::Parser;
@@ -68,6 +69,10 @@ enum Commands {
         output: Option<PathBuf>,
         #[arg(short, long)]
         verbose: bool,
+        #[arg(short, long, action = clap::ArgAction::SetTrue, help = "Print assembly to console even if output file is specified")] 
+        stdout: bool,
+        #[arg(short = 'O', long, action = clap::ArgAction::SetTrue, help = "Show assembly before and after optimization")]
+        optimize: bool,
     },
     /// Запуск всех тестов.
     Test,
@@ -86,7 +91,7 @@ fn main() -> Result<()> {
         Commands::Parse { input, output, ast_format, verbose } => run_parser(&input, output.as_ref(), ast_format, verbose),
         Commands::Check { input, verbose } => run_check(&input, verbose),
         Commands::Ir { input, output, format, verbose, stats } => run_ir(&input, output.as_ref(), format, verbose, stats),
-        Commands::Compile { input, output, verbose } => run_compile(&input, output.as_ref(), verbose),
+        Commands::Compile { input, output, verbose, stdout, optimize } => run_compile(&input, output.as_ref(), verbose, stdout, optimize),
         Commands::Dump { input } => run_dump(&input),
         Commands::Test => run_tests(),
     }
@@ -360,7 +365,7 @@ fn run_dump(input_path: &PathBuf) -> Result<()> {
 
     Ok(())
 }
-fn run_compile(input_path: &PathBuf, output_path: Option<&PathBuf>, verbose: bool) -> Result<()> {
+fn run_compile(input_path: &PathBuf, output_path: Option<&PathBuf>, verbose: bool, stdout: bool, optimize: bool) -> Result<()> {
     let source = fs::read_to_string(input_path)?;
     let mut scanner = Scanner::new(&source);
     let mut tokens = Vec::new();
@@ -402,9 +407,29 @@ fn run_compile(input_path: &PathBuf, output_path: Option<&PathBuf>, verbose: boo
         println!("Генерация кода x86-64 завершена успешно.");
     }
 
-    match output_path {
-        Some(path) => fs::write(path, asm)?,
-        None => print!("{}", asm),
+    // Optimization and output handling
+    if optimize {
+        println!("--- Assembly before optimization ---\n{}", asm);
+        let optimized = minicompiler::codegen::optimizer::PeepholeOptimizer::optimize(asm.clone());
+        println!("--- Assembly after optimization ---\n{}", optimized);
+        if stdout {
+            // print optimized asm to console
+            print!("{}", optimized);
+        } else {
+            match output_path {
+                Some(path) => fs::write(path, optimized)?,
+                None => print!("{}", optimized),
+            }
+        }
+    } else {
+        if stdout {
+            print!("{}", asm);
+        } else {
+            match output_path {
+                Some(path) => fs::write(path, asm)?,
+                None => print!("{}", asm),
+            }
+        }
     }
 
     Ok(())
