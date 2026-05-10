@@ -223,9 +223,45 @@ cargo run -- dump --input <FILE>
 Sequentially prints the output of `lex`, `parse`, `check --verbose`, and `ir`. The symbol table dump in this mode includes **Archived Scopes**, showing variables that have gone out of scope but were tracked during analysis.
 
 **Example:**
+
+---
+
+### `compile` — Генерация кода x86-64 (Sprint 5-7)
+
+Транслирует исходный код в ассемблер x86-64 (формат NASM). Поддерживает массивы и внешние функции.
+
 ```bash
-cargo run -- dump --input examples/hello.src
+cargo run -- compile --input <FILE> [--output <FILE>] [--optimize] [--stdout]
 ```
+
+| Флаг | Короткий | Описание |
+| :--- | :--- | :--- |
+| `--input <FILE>` | `-i` | Исходный файл `.src` |
+| `--output <FILE>` | `-o` | Куда записать `.asm` |
+| `--optimize` | `-O` | Включить глазковую оптимизацию |
+| `--stdout` | `-s` | Вывести результат в консоль |
+
+---
+
+## Примеры Спринта 7 (Массивы и Extern)
+
+Компиляция кода с использованием массивов и внешних функций C:
+
+```bash
+# 1. Генерация ассемблера
+cargo run -- compile --input examples/test_extern.src --output test.asm
+
+# 2. Сборка объектного файла (требуется nasm)
+nasm -f elf64 test.asm -o test.o
+
+# 3. Линковка с библиотекой C (требуется gcc или ld)
+gcc test.o -o test -no-pie
+
+# 4. Запуск
+./test
+```
+
+**Встроенные функции:** `printf`, `scanf`, `malloc`, `free`, `print_int`, `read_int`.
 
 ---
 

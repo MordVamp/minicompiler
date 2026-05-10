@@ -15,8 +15,9 @@ pub struct IRGenerator {
     pub functions: Vec<FunctionMetadata>,
     current_block: String,
     temp_counter: usize,
-    label_counter: usize,
+    pub label_counter: usize,
     struct_fields: std::collections::HashMap<String, Vec<String>>,
+    pub strings: Vec<(String, String)>,
 }
 
 impl IRGenerator {
@@ -30,6 +31,7 @@ impl IRGenerator {
             temp_counter: 0,
             label_counter: 0,
             struct_fields: std::collections::HashMap::new(),
+            strings: Vec::new(),
         }
     }
 
@@ -129,6 +131,34 @@ impl IRGenerator {
                         result: Operand::Var { name: name.clone(), version: 0 },
                         source: src,
                     });
+                }
+            }
+            DeclarationNode::ArrayDecl { name, size, initializer, .. } => {
+                let mut alloc_size = 0;
+                if let Some(sz_expr) = size {
+                    if let ExpressionNode::Literal { value: crate::lexer::token::LiteralValue::Integer(v), .. } = sz_expr {
+                        alloc_size = *v as usize;
+                    }
+                } else if let Some(init) = initializer {
+                    alloc_size = init.len();
+                }
+                
+                self.emit(IRInstruction::Alloca {
+                    result: Operand::Var { name: name.clone(), version: 0 },
+                    size: alloc_size,
+                });
+
+                if let Some(init) = initializer {
+                    for (i, expr) in init.iter().enumerate() {
+                        let src = self.visit_expression(expr);
+                        let ptr = self.new_temp();
+                        self.emit(IRInstruction::GetElementPtr { 
+                            result: ptr.clone(), 
+                            base: Operand::Var { name: name.clone(), version: 0 }, 
+                            offset: Operand::Literal { value: i.to_string() } 
+                        });
+                        self.emit(IRInstruction::Store { address: ptr, source: src });
+                    }
                 }
             }
         }
@@ -233,7 +263,14 @@ impl IRGenerator {
     fn visit_expression(&mut self, expr: &ExpressionNode) -> Operand {
         match expr {
             ExpressionNode::Literal { value, .. } => {
-                Operand::Literal { value: value.to_string() }
+                if let crate::lexer::token::LiteralValue::String(s) = value {
+                    let label = self.new_label("str");
+                    // NasM strings can be created exactly like the string contents, but we should make sure we quote them or define them byte by byte
+                    self.strings.push((label.clone(), format!("`{}`", s.replace("`", "\\`"))));
+                    Operand::Label { name: label }
+                } else {
+                    Operand::Literal { value: value.to_string() }
+                }
             }
             ExpressionNode::Identifier { name, .. } => {
                 Operand::Var { name: name.clone(), version: 0 }
@@ -311,10 +348,39 @@ impl IRGenerator {
             }
             ExpressionNode::Assignment { target, value, .. } => {
                 let v_op = self.visit_expression(value);
-                self.emit(IRInstruction::Move {
-                    result: Operand::Var { name: target.clone(), version: 0 },
-                    source: v_op.clone(),
-                });
+                
+                if let ExpressionNode::Identifier { name, .. } = &**target {
+                    self.emit(IRInstruction::Move {
+                        result: Operand::Var { name: name.clone(), version: 0 },
+                        source: v_op.clone(),
+                    });
+                } else if let ExpressionNode::ArrayAccess { target: arr, index, .. } = &**target {
+                    let base = self.visit_expression(arr);
+                    let offset = self.visit_expression(index);
+                    let ptr = self.new_temp();
+                    self.emit(IRInstruction::GetElementPtr { 
+                        result: ptr.clone(), 
+                        base, 
+                        offset 
+                    });
+                    self.emit(IRInstruction::Store { address: ptr, source: v_op.clone() });
+                } else if let ExpressionNode::MemberAccess { target: obj, member, .. } = &**target {
+                    let base = self.visit_expression(obj);
+                    let struct_name = obj.type_info().cloned().unwrap_or_default();
+                    let offset_val = if let Some(fields) = self.struct_fields.get(&struct_name) {
+                        fields.iter().position(|f| f == member).unwrap_or(0)
+                    } else {
+                        0
+                    };
+                    let ptr = self.new_temp();
+                    self.emit(IRInstruction::GetElementPtr { 
+                        result: ptr.clone(), 
+                        base, 
+                        offset: Operand::Literal { value: offset_val.to_string() } 
+                    });
+                    self.emit(IRInstruction::Store { address: ptr, source: v_op.clone() });
+                }
+                
                 v_op
             }
             ExpressionNode::Call { callee, arguments, .. } => {
@@ -340,6 +406,20 @@ impl IRGenerator {
                     result: ptr.clone(), 
                     base, 
                     offset: Operand::Literal { value: offset.to_string() } 
+                });
+                
+                let result = self.new_temp();
+                self.emit(IRInstruction::Load { result: result.clone(), address: ptr });
+                result
+            }
+            ExpressionNode::ArrayAccess { target, index, .. } => {
+                let base = self.visit_expression(target);
+                let offset = self.visit_expression(index);
+                let ptr = self.new_temp();
+                self.emit(IRInstruction::GetElementPtr { 
+                    result: ptr.clone(), 
+                    base, 
+                    offset 
                 });
                 
                 let result = self.new_temp();

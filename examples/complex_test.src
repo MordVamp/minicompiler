@@ -1,0 +1,16 @@
+fn is_even(int n) -> bool {
+    return n % 2 == 0;
+}
+
+fn do_nothing() -> void {
+    int sum = 0;
+    for (int i = 0; i < 5; i = i + 1) {
+        if (is_even(i)) {
+            sum = sum + i;
+        }
+    }
+}
+
+fn main() -> void {
+    do_nothing();
+}

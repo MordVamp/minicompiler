@@ -6,6 +6,7 @@ impl ExpressionGenerator {
     pub fn load_operand(reg: &str, op: &Operand, offset_provider: &mut dyn FnMut(&Operand) -> i32) -> String {
         match op {
             Operand::Literal { value } => format!("  mov {}, {}\n", reg, value),
+            Operand::Label { name } => format!("  mov {}, {}\n", reg, name),
             _ => {
                 let offset = offset_provider(op);
                 format!("  mov {}, [rbp{}]\n", reg, if offset >= 0 { format!("+{}", offset) } else { offset.to_string() })

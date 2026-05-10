@@ -30,6 +30,23 @@ impl StackFrame {
         }
     }
 
+    pub fn allocate_array(&mut self, operand: &Operand, size: usize) -> i32 {
+        let key = match operand {
+            Operand::Var { name, .. } => format!("var_{}", name),
+            Operand::Temp { id, .. } => format!("temp_{}", id),
+            _ => operand.to_string(),
+        };
+        if let Some(&offset) = self.offsets.get(&key) {
+            return offset;
+        }
+        
+        let alloc_size = (size as i32) * 8;
+        let base_offset = self.next_offset - alloc_size + 8;
+        self.offsets.insert(key, base_offset);
+        self.next_offset -= alloc_size;
+        base_offset
+    }
+
     pub fn reset(&mut self) {
         self.offsets.clear();
         self.next_offset = -8;

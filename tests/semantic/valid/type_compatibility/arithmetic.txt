@@ -1,9 +1,15 @@
 --- Symbol Table Dump ---
 Archived Scope 0 (Depth 2):
-  b : Variable of type int
   a : Variable of type int
+  b : Variable of type int
   c : Variable of type int
 Archived Scope 1 (Depth 1):
 Active Scope level 0:
+  malloc : Function of type fn(int) -> int
+  print_int : Function of type fn(int) -> void
+  printf : Function of type fn() -> int
   f : Function of type fn() -> void
+  scanf : Function of type fn() -> int
+  free : Function of type fn(int) -> void
+  read_int : Function of type fn() -> int
 -------------------------

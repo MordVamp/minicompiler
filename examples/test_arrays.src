@@ -1,0 +1,8 @@
+fn main() -> void {
+    int arr[5];
+    arr[0] = 10;
+    arr[1] = 20;
+    int sum = arr[0] + arr[1];
+    
+    int pre_init[3] = {1, 2, 3};
+}

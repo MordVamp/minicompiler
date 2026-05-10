@@ -118,20 +118,57 @@ impl Parser {
         let name_token = self.consume(TokenType::Identifier, "Expected variable name.")?.clone();
         let pos = Position { line: type_token.line, column: type_token.column };
         
-        let initializer = if self.match_token(&[TokenType::Equal]) {
-            Some(self.parse_expression()?)
-        } else {
-            None
-        };
-        
-        let _ = self.symbols.define(name_token.lexeme.clone(), SymbolKind::Variable, type_token.lexeme.clone(), pos.line, pos.column);
+        if self.match_token(&[TokenType::LBracket]) {
+            let size = if !self.check(TokenType::RBracket) {
+                Some(self.parse_expression()?)
+            } else {
+                None
+            };
+            self.consume(TokenType::RBracket, "Expected ']' after array size.")?;
 
-        Ok(DeclarationNode::VarDecl {
-            var_type: type_token.lexeme,
-            name: name_token.lexeme,
-            initializer,
-            position: pos,
-        })
+            let initializer = if self.match_token(&[TokenType::Equal]) {
+                self.consume(TokenType::LBrace, "Expected '{' for array initializer.")?;
+                let mut elements = Vec::new();
+                if !self.check(TokenType::RBrace) {
+                    loop {
+                        elements.push(self.parse_expression()?);
+                        if !self.match_token(&[TokenType::Comma]) {
+                            break;
+                        }
+                    }
+                }
+                self.consume(TokenType::RBrace, "Expected '}' after array initializer.")?;
+                Some(elements)
+            } else {
+                None
+            };
+            
+            let array_type = format!("{}[]", type_token.lexeme);
+            let _ = self.symbols.define(name_token.lexeme.clone(), SymbolKind::Variable, array_type.clone(), pos.line, pos.column);
+
+            Ok(DeclarationNode::ArrayDecl {
+                var_type: type_token.lexeme,
+                name: name_token.lexeme,
+                size,
+                initializer,
+                position: pos,
+            })
+        } else {
+            let initializer = if self.match_token(&[TokenType::Equal]) {
+                Some(self.parse_expression()?)
+            } else {
+                None
+            };
+            
+            let _ = self.symbols.define(name_token.lexeme.clone(), SymbolKind::Variable, type_token.lexeme.clone(), pos.line, pos.column);
+
+            Ok(DeclarationNode::VarDecl {
+                var_type: type_token.lexeme,
+                name: name_token.lexeme,
+                initializer,
+                position: pos,
+            })
+        }
     }
 
     fn parse_type(&mut self) -> Result<&Token, String> {
@@ -274,13 +311,14 @@ impl Parser {
         if self.match_token(&[TokenType::Equal, TokenType::PlusEqual, TokenType::MinusEqual, TokenType::StarEqual, TokenType::SlashEqual]) {
             let operator = self.previous().token_type;
             let value = self.parse_assignment()?; // Right-associative
+            let pos = expr.position().clone();
             
-            if let ExpressionNode::Identifier { name, position, .. } = expr {
+            if matches!(expr, ExpressionNode::Identifier { .. } | ExpressionNode::ArrayAccess { .. } | ExpressionNode::MemberAccess { .. }) {
                 return Ok(ExpressionNode::Assignment {
-                    target: name,
+                    target: Box::new(expr),
                     operator,
                     value: Box::new(value),
-                    position,
+                    position: pos,
                     type_info: None,
                 });
             }
@@ -412,6 +450,16 @@ impl Parser {
                 expr = ExpressionNode::MemberAccess {
                     target: Box::new(expr),
                     member,
+                    position: pos,
+                    type_info: None,
+                };
+            } else if self.match_token(&[TokenType::LBracket]) {
+                let pos = self.current_position();
+                let index = self.parse_expression()?;
+                self.consume(TokenType::RBracket, "Expected ']' after array index.")?;
+                expr = ExpressionNode::ArrayAccess {
+                    target: Box::new(expr),
+                    index: Box::new(index),
                     position: pos,
                     type_info: None,
                 };

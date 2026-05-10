@@ -4,5 +4,11 @@ Archived Scope 0 (Depth 2):
   c : Variable of type bool
 Archived Scope 1 (Depth 1):
 Active Scope level 0:
+  scanf : Function of type fn() -> int
+  malloc : Function of type fn(int) -> int
+  read_int : Function of type fn() -> int
+  printf : Function of type fn() -> int
   f : Function of type fn() -> void
+  print_int : Function of type fn(int) -> void
+  free : Function of type fn(int) -> void
 -------------------------

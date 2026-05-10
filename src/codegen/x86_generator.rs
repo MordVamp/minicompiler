@@ -10,16 +10,18 @@ pub struct X86Generator {
     output: String,
     stack_frame: StackFrame,
     params: Vec<Operand>,
+    strings: Vec<(String, String)>,
 }
 
 impl X86Generator {
-    pub fn new(blocks: HashMap<String, BasicBlock>, functions: Vec<FunctionMetadata>) -> Self {
+    pub fn new(blocks: HashMap<String, BasicBlock>, functions: Vec<FunctionMetadata>, strings: Vec<(String, String)>) -> Self {
         Self {
             blocks,
             functions,
             output: String::new(),
             stack_frame: StackFrame::new(),
             params: Vec::new(),
+            strings,
         }
     }
 
@@ -29,6 +31,10 @@ impl X86Generator {
         
         self.output.push_str("extern print_int\n");
         self.output.push_str("extern read_int\n");
+        self.output.push_str("extern printf\n");
+        self.output.push_str("extern scanf\n");
+        self.output.push_str("extern malloc\n");
+        self.output.push_str("extern free\n");
         self.output.push_str("extern exit\n\n");
 
         self.output.push_str("section .text\n");
@@ -44,6 +50,13 @@ impl X86Generator {
         self.output.push_str("  mov rdi, rax\n");
         self.output.push_str("  mov rax, 60\n");
         self.output.push_str("  syscall\n");
+
+        if !self.strings.is_empty() {
+            self.output.push_str("\nsection .data\n");
+            for (label, val) in &self.strings {
+                self.output.push_str(&format!("{}: db {}, 0\n", label, val));
+            }
+        }
 
         PeepholeOptimizer::optimize(self.output.clone())
     }
@@ -89,20 +102,66 @@ impl X86Generator {
         for blk_label in reachable {
             self.generate_block(&blk_label);
         }
+
+        // Гарантируем наличие эпилога и возврата из функции (особенно для void функций или main)
+        self.output.push_str(&format!(".{}_epilogue_fallback:\n", func.name));
+        self.output.push_str("  mov rsp, rbp\n");
+        self.output.push_str("  pop rbp\n");
+        self.output.push_str("  ret\n");
     }
 
     fn track_operands(&mut self, inst: &IRInstruction) {
+        let sf = &mut self.stack_frame;
+        let mut track = |op: &Operand| {
+            if let Operand::Var { .. } | Operand::Temp { .. } = op {
+                sf.get_offset(op);
+            }
+        };
+
         match inst {
-            IRInstruction::Add { result, .. } | IRInstruction::Sub { result, .. } |
-            IRInstruction::Mul { result, .. } | IRInstruction::Div { result, .. } |
-            IRInstruction::And { result, .. } | IRInstruction::Or { result, .. } |
-            IRInstruction::Xor { result, .. } | IRInstruction::Not { result, .. } |
-            IRInstruction::Equal { result, .. } | IRInstruction::NotEqual { result, .. } |
-            IRInstruction::Less { result, .. } | IRInstruction::LessEqual { result, .. } |
-            IRInstruction::Greater { result, .. } | IRInstruction::GreaterEqual { result, .. } |
-            IRInstruction::Neg { result, .. } | IRInstruction::Move { result, .. } |
-            IRInstruction::Call { result: Some(result), .. } | IRInstruction::Phi { result, .. } => {
-                self.stack_frame.get_offset(result);
+            IRInstruction::Add { result, left, right } | IRInstruction::Sub { result, left, right } |
+            IRInstruction::Mul { result, left, right } | IRInstruction::Div { result, left, right } |
+            IRInstruction::And { result, left, right } | IRInstruction::Or { result, left, right } |
+            IRInstruction::Xor { result, left, right } |
+            IRInstruction::Equal { result, left, right } | IRInstruction::NotEqual { result, left, right } |
+            IRInstruction::Less { result, left, right } | IRInstruction::LessEqual { result, left, right } |
+            IRInstruction::Greater { result, left, right } | IRInstruction::GreaterEqual { result, left, right } => {
+                track(result);
+                track(left);
+                track(right);
+            }
+            IRInstruction::Not { result, operand } | IRInstruction::Neg { result, operand } | IRInstruction::Move { result, source: operand } => {
+                track(result);
+                track(operand);
+            }
+            IRInstruction::Call { result, num_args, .. } => {
+                if let Some(r) = result { track(r); }
+            }
+            IRInstruction::Phi { result, sources } => {
+                track(result);
+                for (op, _) in sources { track(op); }
+            }
+            IRInstruction::Alloca { result, size } => {
+                sf.allocate_array(result, *size);
+            }
+            IRInstruction::Load { result, address } => {
+                track(result);
+                track(address);
+            }
+            IRInstruction::Store { address, source } => {
+                track(address);
+                track(source);
+            }
+            IRInstruction::GetElementPtr { result, base, offset } => {
+                track(result);
+                track(base);
+                track(offset);
+            }
+            IRInstruction::JumpIfTrue { condition, .. } | IRInstruction::JumpIfFalse { condition, .. } => {
+                track(condition);
+            }
+            IRInstruction::Return { value: Some(op) } | IRInstruction::Param { value: op } => {
+                track(op);
             }
             _ => {}
         }
@@ -194,6 +253,9 @@ impl X86Generator {
                         self.output.push_str(&ExpressionGenerator::load_operand(reg, &arg, &mut |o| sf.get_offset(o)));
                     }
                 }
+                if callee == "printf" || callee == "scanf" {
+                    self.output.push_str("  mov eax, 0\n");
+                }
                 self.output.push_str(&format!("  call {}\n", callee));
                 if let Some(r) = result {
                     self.output.push_str(&ExpressionGenerator::store_operand(r, "rax", &mut |o| sf.get_offset(o)));
@@ -228,6 +290,27 @@ impl X86Generator {
                 self.output.push_str("  xor rax, 1\n");
                 self.output.push_str(&ExpressionGenerator::store_operand(result, "rax", &mut |o| sf.get_offset(o)));
             }
+            IRInstruction::Alloca { .. } => {
+                // Stack is pre-allocated by StackFrame, so no instructions needed.
+            }
+            IRInstruction::Load { result, address } => {
+                self.output.push_str(&ExpressionGenerator::load_operand("rax", address, &mut |o| sf.get_offset(o)));
+                self.output.push_str("  mov rcx, [rax]\n");
+                self.output.push_str(&ExpressionGenerator::store_operand(result, "rcx", &mut |o| sf.get_offset(o)));
+            }
+            IRInstruction::Store { address, source } => {
+                self.output.push_str(&ExpressionGenerator::load_operand("rax", address, &mut |o| sf.get_offset(o)));
+                self.output.push_str(&ExpressionGenerator::load_operand("rcx", source, &mut |o| sf.get_offset(o)));
+                self.output.push_str("  mov [rax], rcx\n");
+            }
+            IRInstruction::GetElementPtr { result, base, offset } => {
+                let base_offset = sf.get_offset(base);
+                self.output.push_str(&format!("  lea rax, [rbp{}]\n", if base_offset >= 0 { format!("+{}", base_offset) } else { base_offset.to_string() }));
+                self.output.push_str(&ExpressionGenerator::load_operand("rcx", offset, &mut |o| sf.get_offset(o)));
+                self.output.push_str("  shl rcx, 3\n");
+                self.output.push_str("  add rax, rcx\n");
+                self.output.push_str(&ExpressionGenerator::store_operand(result, "rax", &mut |o| sf.get_offset(o)));
+            }
             _ => { self.output.push_str(&format!("  ; Unimplemented: {}\n", inst)); }
         }
     }
@@ -235,6 +318,7 @@ impl X86Generator {
     fn static_operand_to_str(op: &Operand, sf: &mut StackFrame) -> String {
         match op {
             Operand::Literal { value } => value.clone(),
+            Operand::Label { name } => name.clone(),
             _ => {
                 let offset = sf.get_offset(op);
                 format!("qword [rbp{}]", if offset >= 0 { format!("+{}", offset) } else { offset.to_string() })

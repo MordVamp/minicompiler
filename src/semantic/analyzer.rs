@@ -13,12 +13,21 @@ pub struct SemanticAnalyzer {
 
 impl SemanticAnalyzer {
     pub fn new() -> Self {
-        Self {
+        let mut sa = Self {
             symbol_table: SymbolTable::new(),
             errors: Vec::new(),
             current_function_return_type: None,
             struct_defs: std::collections::HashMap::new(),
-        }
+        };
+        
+        let _ = sa.symbol_table.define("print_int".to_string(), SymbolKind::Function, Type::Function { params: vec![Type::Int], ret: Box::new(Type::Void) }, 0, 0);
+        let _ = sa.symbol_table.define("read_int".to_string(), SymbolKind::Function, Type::Function { params: vec![], ret: Box::new(Type::Int) }, 0, 0);
+        let _ = sa.symbol_table.define("malloc".to_string(), SymbolKind::Function, Type::Function { params: vec![Type::Int], ret: Box::new(Type::Int) }, 0, 0);
+        let _ = sa.symbol_table.define("free".to_string(), SymbolKind::Function, Type::Function { params: vec![Type::Int], ret: Box::new(Type::Void) }, 0, 0);
+        let _ = sa.symbol_table.define("printf".to_string(), SymbolKind::Function, Type::Function { params: vec![], ret: Box::new(Type::Int) }, 0, 0);
+        let _ = sa.symbol_table.define("scanf".to_string(), SymbolKind::Function, Type::Function { params: vec![], ret: Box::new(Type::Int) }, 0, 0);
+        
+        sa
     }
 
     fn check_unreachable_code(&mut self, body: &StatementNode) {
@@ -134,6 +143,20 @@ impl SemanticAnalyzer {
                     let init_ty = self.visit_expression(init_expr);
                     if init_ty != declared_ty && init_ty != Type::Unknown {
                         self.report_error(position, format!("Type mismatch: cannot assign {} to {} '{}'", init_ty.to_string(), declared_ty.to_string(), name));
+                    }
+                }
+
+                if let Err(e) = self.symbol_table.define(name.clone(), SymbolKind::Variable, declared_ty, position.line, position.column) {
+                    self.report_error(position, e);
+                }
+            }
+            DeclarationNode::ArrayDecl { var_type, name, size, initializer, position } => {
+                let declared_ty = Type::from_string(&format!("{}[]", var_type));
+                
+                if let Some(sz) = size {
+                    let sz_ty = self.visit_expression(sz);
+                    if sz_ty != Type::Int && sz_ty != Type::Unknown {
+                        self.report_error(position, format!("Array size must be of type int, got {}", sz_ty.to_string()));
                     }
                 }
 
@@ -279,21 +302,13 @@ impl SemanticAnalyzer {
             }
             ExpressionNode::Assignment { target, value, position, .. } => {
                 let v_ty = self.visit_expression(value);
-                let symbol_type = if let Some(symbol) = self.symbol_table.lookup(target) {
-                    Some(symbol.typ.clone())
-                } else {
-                    None
-                };
+                let target_ty = self.visit_expression(target);
 
-                if let Some(s_ty) = symbol_type {
-                    if s_ty != v_ty && v_ty != Type::Unknown {
-                        self.report_error(position, format!("Type mismatch in assignment: cannot assign {} to {} '{}'", v_ty.to_string(), s_ty.to_string(), target));
-                    }
-                    s_ty
-                } else {
-                    self.report_error(position, format!("Undefined variable '{}' in assignment", target));
-                    Type::Unknown
+                if target_ty != v_ty && v_ty != Type::Unknown && target_ty != Type::Unknown {
+                    self.report_error(position, format!("Type mismatch in assignment: cannot assign {} to {}", v_ty.to_string(), target_ty.to_string()));
                 }
+                
+                target_ty
             }
             ExpressionNode::Call { callee, arguments, position, .. } => {
                 let mut arg_types = Vec::new();
@@ -309,7 +324,9 @@ impl SemanticAnalyzer {
 
                 if let Some(s_ty) = symbol_type {
                     if let Type::Function { params, ret } = s_ty {
-                        if params.len() != arg_types.len() {
+                        if callee == "printf" || callee == "scanf" {
+                            // Skip parameter validation for variadic standard functions
+                        } else if params.len() != arg_types.len() {
                             self.report_error(position, format!("Function '{}' requires {} arguments, but {} were provided", callee, params.len(), arg_types.len()));
                         } else {
                             for (i, (p_ty, a_ty)) in params.iter().zip(arg_types.iter()).enumerate() {
@@ -344,6 +361,24 @@ impl SemanticAnalyzer {
                     }
                 } else if target_ty != Type::Unknown {
                     self.report_error(position, format!("Cannot access member '{}' on non-struct type {}", member, target_ty.to_string()));
+                    Type::Unknown
+                } else {
+                    Type::Unknown
+                }
+            }
+            ExpressionNode::ArrayAccess { target, index, position, .. } => {
+                let target_ty = self.visit_expression(target);
+                let index_ty = self.visit_expression(index);
+                
+                if index_ty != Type::Int && index_ty != Type::Unknown {
+                    self.report_error(position, format!("Array index must be of type int, got {}", index_ty.to_string()));
+                }
+                
+                let t_str = target_ty.to_string();
+                if t_str.ends_with("[]") {
+                    Type::from_string(&t_str[..t_str.len()-2])
+                } else if target_ty != Type::Unknown {
+                    self.report_error(position, format!("Cannot index non-array type {}", t_str));
                     Type::Unknown
                 } else {
                     Type::Unknown

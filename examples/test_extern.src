@@ -1,0 +1,16 @@
+fn main() -> void {
+    printf("Testing external functions:\n");
+    
+    // Test printf
+    printf("Array allocation test...\n");
+    
+    // Since we don't have pointers, we'll just test that we can call malloc.
+    // malloc returns a pointer, we store it in int.
+    int ptr = malloc(40);
+    printf("Allocated 40 bytes at address: %d\n", ptr);
+    
+    free(ptr);
+    printf("Freed memory.\n");
+    
+    printf("Done!\n");
+}

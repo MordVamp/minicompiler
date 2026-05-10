@@ -41,6 +41,13 @@ pub enum DeclarationNode {
         initializer: Option<ExpressionNode>,
         position: Position,
     },
+    ArrayDecl {
+        var_type: String,
+        name: String,
+        size: Option<ExpressionNode>,
+        initializer: Option<Vec<ExpressionNode>>,
+        position: Position,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -128,7 +135,7 @@ pub enum ExpressionNode {
         type_info: Option<String>,
     },
     Assignment {
-        target: String,
+        target: Box<ExpressionNode>,
         operator: TokenType,
         value: Box<ExpressionNode>,
         position: Position,
@@ -137,6 +144,12 @@ pub enum ExpressionNode {
     MemberAccess {
         target: Box<ExpressionNode>,
         member: String,
+        position: Position,
+        type_info: Option<String>,
+    },
+    ArrayAccess {
+        target: Box<ExpressionNode>,
+        index: Box<ExpressionNode>,
         position: Position,
         type_info: Option<String>,
     },
@@ -202,6 +215,20 @@ impl DeclarationNode {
                 out.push('\n');
                 out
             }
+            DeclarationNode::ArrayDecl { var_type, name, size, initializer, .. } => {
+                let mut out = format!("{}ArrayDecl: {} {}", ind, var_type, name);
+                if let Some(sz) = size {
+                    out.push_str(&format!("[{}]", sz.to_pretty_string(0)));
+                } else {
+                    out.push_str("[]");
+                }
+                if let Some(init) = initializer {
+                    let elems = init.iter().map(|e| e.to_pretty_string(0)).collect::<Vec<_>>().join(", ");
+                    out.push_str(&format!(" = {{{}}}", elems));
+                }
+                out.push('\n');
+                out
+            }
         }
     }
 
@@ -224,6 +251,17 @@ impl DeclarationNode {
                 out.push_str(&format!("  {} [label=\"{{VarDecl | {}: {}}}\", color=lightblue, style=filled];\n", my_id, name, var_type));
                 if let Some(init) = initializer {
                     init.to_dot(out, &my_id, id);
+                }
+            }
+            DeclarationNode::ArrayDecl { var_type, name, size, initializer, .. } => {
+                out.push_str(&format!("  {} [label=\"{{ArrayDecl | {}: {}[]}}\", color=lightblue, style=filled];\n", my_id, name, var_type));
+                if let Some(sz) = size {
+                    sz.to_dot(out, &my_id, id);
+                }
+                if let Some(init) = initializer {
+                    for e in init {
+                        e.to_dot(out, &my_id, id);
+                    }
                 }
             }
         }
@@ -381,13 +419,16 @@ impl ExpressionNode {
                 format!("{}({})", callee, args)
             }
             ExpressionNode::Assignment { target, operator, value, .. } => {
-                format!("({} {} {})", target, Self::op_to_str(operator), value.to_pretty_string(0))
+                format!("({} {} {})", target.to_pretty_string(0), Self::op_to_str(operator), value.to_pretty_string(0))
             }
             ExpressionNode::Postfix { target, operator, .. } => {
                 format!("({}{})", target.to_pretty_string(0), Self::op_to_str(operator))
             }
             ExpressionNode::MemberAccess { target, member, .. } => {
                 format!("{}.{}", target.to_pretty_string(0), member)
+            }
+            ExpressionNode::ArrayAccess { target, index, .. } => {
+                format!("{}[{}]", target.to_pretty_string(0), index.to_pretty_string(0))
             }
         };
         format!("{}{}", base, t_str)
@@ -422,7 +463,8 @@ impl ExpressionNode {
                 }
             }
             ExpressionNode::Assignment { target, operator, value, .. } => {
-                out.push_str(&format!("  {} [label=\"Assign: {} {}\", color=red];\n", my_id, target, Self::op_to_str(operator)));
+                out.push_str(&format!("  {} [label=\"Assign: {}\", color=red];\n", my_id, Self::op_to_str(operator)));
+                target.to_dot(out, &my_id, id);
                 value.to_dot(out, &my_id, id);
             }
             ExpressionNode::Postfix { target, operator, .. } => {
@@ -432,6 +474,11 @@ impl ExpressionNode {
             ExpressionNode::MemberAccess { target, member, .. } => {
                 out.push_str(&format!("  {} [label=\"MemberAccess: .{}\"];\n", my_id, member));
                 target.to_dot(out, &my_id, id);
+            }
+            ExpressionNode::ArrayAccess { target, index, .. } => {
+                out.push_str(&format!("  {} [label=\"ArrayAccess: []\"];\n", my_id));
+                target.to_dot(out, &my_id, id);
+                index.to_dot(out, &my_id, id);
             }
         }
     }
@@ -448,6 +495,7 @@ impl ExpressionNode {
             ExpressionNode::Assignment { position, .. } => position,
             ExpressionNode::Postfix { position, .. } => position,
             ExpressionNode::MemberAccess { position, .. } => position,
+            ExpressionNode::ArrayAccess { position, .. } => position,
         }
     }
 
@@ -461,6 +509,7 @@ impl ExpressionNode {
             ExpressionNode::Assignment { type_info, .. } => type_info.as_ref(),
             ExpressionNode::Postfix { type_info, .. } => type_info.as_ref(),
             ExpressionNode::MemberAccess { type_info, .. } => type_info.as_ref(),
+            ExpressionNode::ArrayAccess { type_info, .. } => type_info.as_ref(),
         }
     }
 
@@ -474,6 +523,7 @@ impl ExpressionNode {
             ExpressionNode::Assignment { type_info, .. } => *type_info = Some(t),
             ExpressionNode::Postfix { type_info, .. } => *type_info = Some(t),
             ExpressionNode::MemberAccess { type_info, .. } => *type_info = Some(t),
+            ExpressionNode::ArrayAccess { type_info, .. } => *type_info = Some(t),
         }
     }
 }

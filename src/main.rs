@@ -400,7 +400,7 @@ fn run_compile(input_path: &PathBuf, output_path: Option<&PathBuf>, verbose: boo
     let mut ssa_builder = minicompiler::ir::ssa_constructor::SSAConstructor::new(ir_gen.blocks);
     ssa_builder.construct();
 
-    let mut codegen = minicompiler::codegen::X86Generator::new(ssa_builder.blocks, ir_gen.functions);
+    let mut codegen = minicompiler::codegen::X86Generator::new(ssa_builder.blocks, ir_gen.functions, ir_gen.strings);
     let asm = codegen.generate();
 
     if verbose {

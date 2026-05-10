@@ -1,4 +1,4 @@
 Semantic Error at line 2, column 22: Type mismatch in binary operation: int PLUS float
-Semantic Error at line 5, column 5: Type mismatch in assignment: cannot assign float to int 'x'
-Semantic Error at line 7, column 5: Type mismatch in assignment: cannot assign float to int 'z'
+Semantic Error at line 5, column 5: Type mismatch in assignment: cannot assign float to int
+Semantic Error at line 7, column 5: Type mismatch in assignment: cannot assign float to int
 Semantic Error at line 8, column 5: Return type mismatch: expected int, got bool

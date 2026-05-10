@@ -8,5 +8,11 @@ Archived Scope 3 (Depth 2):
 Archived Scope 4 (Depth 1):
 Active Scope level 0:
   main : Function of type fn() -> void
+  scanf : Function of type fn() -> int
   factorial : Function of type fn(int) -> int
+  free : Function of type fn(int) -> void
+  printf : Function of type fn() -> int
+  read_int : Function of type fn() -> int
+  print_int : Function of type fn(int) -> void
+  malloc : Function of type fn(int) -> int
 -------------------------
