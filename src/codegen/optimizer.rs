@@ -43,6 +43,29 @@ impl PeepholeOptimizer {
                 continue;
             }
 
+            // 4. Strength Reduction: imul rax, 2^n -> shl rax, n
+            if current == "imul rax, 2" {
+                optimized.push("  shl rax, 1");
+                i += 1;
+                continue;
+            }
+            if current == "imul rax, 4" {
+                optimized.push("  shl rax, 2");
+                i += 1;
+                continue;
+            }
+            if current == "imul rax, 8" {
+                optimized.push("  shl rax, 3");
+                i += 1;
+                continue;
+            }
+
+            // 5. Algebraic Simplification: add rax, 0 -> remove
+            if current == "add rax, 0" || current == "sub rax, 0" {
+                i += 1;
+                continue;
+            }
+
             optimized.push(lines[i]);
             i += 1;
         }

@@ -203,7 +203,7 @@ fn run_check(input_path: &PathBuf, verbose: bool) -> Result<()> {
     } else {
         eprintln!("Найдены семантические ошибки:");
         for err in analyzer.errors {
-            eprintln!("{}", err);
+            eprintln!("{}", minicompiler::utils::format_error_with_context(&source, err.position.line, err.position.column, &err.message));
         }
         std::process::exit(1);
     }
@@ -234,7 +234,7 @@ fn run_ir(input_path: &PathBuf, output_path: Option<&PathBuf>, format: AstFormat
     if !analyzer.analyze(&mut ast) {
         eprintln!("Семантический анализ выявил ошибки. Генерация IR отменена.");
         for err in analyzer.errors {
-            eprintln!("{}", err);
+            eprintln!("{}", minicompiler::utils::format_error_with_context(&source, err.position.line, err.position.column, &err.message));
         }
         std::process::exit(1);
     }
@@ -389,7 +389,7 @@ fn run_compile(input_path: &PathBuf, output_path: Option<&PathBuf>, verbose: boo
     if !analyzer.analyze(&mut ast) {
         eprintln!("Семантический анализ выявил ошибки. Компиляция отменена.");
         for err in analyzer.errors {
-            eprintln!("{}", err);
+            eprintln!("{}", minicompiler::utils::format_error_with_context(&source, err.position.line, err.position.column, &err.message));
         }
         std::process::exit(1);
     }
@@ -400,7 +400,14 @@ fn run_compile(input_path: &PathBuf, output_path: Option<&PathBuf>, verbose: boo
     let mut ssa_builder = minicompiler::ir::ssa_constructor::SSAConstructor::new(ir_gen.blocks);
     ssa_builder.construct();
 
-    let mut codegen = minicompiler::codegen::X86Generator::new(ssa_builder.blocks, ir_gen.functions, ir_gen.strings);
+    let mut blocks = ssa_builder.blocks;
+    if optimize {
+        let mut ir_optimizer = minicompiler::ir::optimizer::IROptimizer::new(blocks);
+        ir_optimizer.optimize();
+        blocks = ir_optimizer.blocks;
+    }
+
+    let mut codegen = minicompiler::codegen::X86Generator::new(blocks, ir_gen.functions, ir_gen.strings);
     let asm = codegen.generate();
 
     if verbose {

@@ -413,15 +413,21 @@ impl SemanticAnalyzer {
                     TokenType::Minus => Some(LiteralValue::Integer(l - r)),
                     TokenType::Star => Some(LiteralValue::Integer(l * r)),
                     TokenType::Slash if *r != 0 => Some(LiteralValue::Integer(l / r)),
+                    TokenType::EqualEqual => Some(LiteralValue::Boolean(l == r)),
+                    TokenType::NotEqual => Some(LiteralValue::Boolean(l != r)),
+                    TokenType::Less => Some(LiteralValue::Boolean(l < r)),
+                    TokenType::LessEqual => Some(LiteralValue::Boolean(l <= r)),
+                    TokenType::Greater => Some(LiteralValue::Boolean(l > r)),
+                    TokenType::GreaterEqual => Some(LiteralValue::Boolean(l >= r)),
                     _ => None,
                 }
             }
-            (LiteralValue::Float(l), LiteralValue::Float(r)) => {
+            (LiteralValue::Boolean(l), LiteralValue::Boolean(r)) => {
                 match op {
-                    TokenType::Plus => Some(LiteralValue::Float(l + r)),
-                    TokenType::Minus => Some(LiteralValue::Float(l - r)),
-                    TokenType::Star => Some(LiteralValue::Float(l * r)),
-                    TokenType::Slash if *r != 0.0 => Some(LiteralValue::Float(l / r)),
+                    TokenType::AndAnd => Some(LiteralValue::Boolean(*l && *r)),
+                    TokenType::OrOr => Some(LiteralValue::Boolean(*l || *r)),
+                    TokenType::EqualEqual => Some(LiteralValue::Boolean(l == r)),
+                    TokenType::NotEqual => Some(LiteralValue::Boolean(l != r)),
                     _ => None,
                 }
             }

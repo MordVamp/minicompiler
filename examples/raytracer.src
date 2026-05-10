@@ -1,0 +1,30 @@
+fn main() -> void {
+    int width = 100;
+    int height = 100;
+    int centerX = 50;
+    int centerY = 50;
+    int radius = 30;
+    int radiusSq = radius * radius;
+
+    // Вывод заголовка PPM (P3 - текстовый формат)
+    printf("P3\n");
+    printf("%d %d\n", width, height);
+    printf("255\n");
+
+    for (int y = 0; y < height; y = y + 1) {
+        for (int x = 0; x < width; x = x + 1) {
+            int dx = x - centerX;
+            int dy = y - centerY;
+            int distSq = dx * dx + dy * dy;
+
+            if (distSq < radiusSq) {
+                // Цвет сферы (красный)
+                printf("255 0 0 ");
+            } else {
+                // Цвет фона (черный)
+                printf("0 0 0 ");
+            }
+        }
+        printf("\n");
+    }
+}
