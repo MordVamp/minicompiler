@@ -3,7 +3,7 @@ pub struct PeepholeOptimizer;
 impl PeepholeOptimizer {
     pub fn optimize(asm: String) -> String {
         let lines: Vec<&str> = asm.lines().collect();
-        let mut optimized = Vec::new();
+        let mut optimized: Vec<String> = Vec::new();
         let mut rax_contents: Option<String> = None;
         let mut i = 0;
 
@@ -49,30 +49,63 @@ impl PeepholeOptimizer {
 
             // 3. Instruction Selection
             if normalized == "mov rax, 0" {
-                optimized.push("  xor eax, eax");
+                optimized.push("  xor eax, eax".to_string());
                 rax_contents = Some("0".to_string());
                 i += 1;
                 continue;
             }
             if normalized == "add rax, 1" {
-                optimized.push("  inc rax");
+                optimized.push("  inc rax".to_string());
                 rax_contents = None;
                 i += 1;
                 continue;
             }
             if normalized == "sub rax, 1" {
-                optimized.push("  dec rax");
+                optimized.push("  dec rax".to_string());
                 rax_contents = None;
                 i += 1;
                 continue;
             }
 
             // 4. Strength Reduction
-            if normalized == "imul rax, 2" { optimized.push("  shl rax, 1"); rax_contents = None; i += 1; continue; }
-            if normalized == "imul rax, 4" { optimized.push("  shl rax, 2"); rax_contents = None; i += 1; continue; }
-            if normalized == "imul rax, 8" { optimized.push("  shl rax, 3"); rax_contents = None; i += 1; continue; }
+            if normalized == "imul rax, 2" { optimized.push("  shl rax, 1".to_string()); rax_contents = None; i += 1; continue; }
+            if normalized == "imul rax, 4" { optimized.push("  shl rax, 2".to_string()); rax_contents = None; i += 1; continue; }
+            if normalized == "imul rax, 8" { optimized.push("  shl rax, 3".to_string()); rax_contents = None; i += 1; continue; }
 
-            // 5. Jump to next line
+            // 5. Condition Code Fusion (setCC + jmp)
+            if normalized.starts_with("set") && normalized.ends_with(" al") && i + 4 < lines.len() {
+                let cc = &normalized[3..normalized.len()-3]; // e.g., 'e', 'l', 'g', 'le', 'ge', 'ne'
+                let next1 = lines[i+1].trim().to_string();
+                let next2 = lines[i+2].trim().to_string();
+                let next3 = lines[i+3].trim().to_string();
+                let next4 = lines[i+4].trim().to_string();
+
+                if next1 == "movzx rax, al" && next2.starts_with("mov [rbp-") && next3 == "cmp rax, 0" {
+                    if next4.starts_with("je ") || next4.starts_with("jne ") {
+                        let is_je = next4.starts_with("je ");
+                        let target = if is_je { &next4[3..] } else { &next4[4..] };
+                        
+                        let final_cc = match (cc, is_je) {
+                            ("e", false) => "je", ("e", true) => "jne",
+                            ("ne", false) => "jne", ("ne", true) => "je",
+                            ("l", false) => "jl", ("l", true) => "jge",
+                            ("le", false) => "jle", ("le", true) => "jg",
+                            ("g", false) => "jg", ("g", true) => "jle",
+                            ("ge", false) => "jge", ("ge", true) => "jl",
+                            _ => "",
+                        };
+
+                        if !final_cc.is_empty() {
+                            optimized.push(format!("  {} {}", final_cc, target));
+                            i += 5;
+                            rax_contents = None;
+                            continue;
+                        }
+                    }
+                }
+            }
+
+            // 6. Jump to next line
             if normalized.starts_with("jmp .") && i + 1 < lines.len() {
                 let target = &normalized[4..];
                 let next_line = lines[i+1].trim();
@@ -82,7 +115,7 @@ impl PeepholeOptimizer {
                 }
             }
 
-            optimized.push(line);
+            optimized.push(line.to_string());
             i += 1;
         }
 

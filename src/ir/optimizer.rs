@@ -189,6 +189,11 @@ impl IROptimizer {
             IRInstruction::Param { value: source } => {
                 used.insert(source.clone());
             }
+            IRInstruction::Phi { sources, .. } => {
+                for (op, _) in sources {
+                    used.insert(op.clone());
+                }
+            }
             _ => {}
         }
     }

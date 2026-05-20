@@ -226,11 +226,7 @@ impl SSAConstructor {
                     IRInstruction::JumpIfFalse { condition, label } => {
                         IRInstruction::JumpIfFalse { condition: self.version_operand_read(&condition), label }
                     }
-                    IRInstruction::Phi { result, sources } => {
-                        let res_ssa = self.version_operand_write(&result);
-                        let sources_ssa = sources.iter().map(|(op, b)| (self.version_operand_read(op), b.clone())).collect();
-                        IRInstruction::Phi { result: res_ssa, sources: sources_ssa }
-                    }
+
                     _ => inst,
                 };
                 new_instructions.push(ssa_inst);
@@ -239,6 +235,23 @@ impl SSAConstructor {
             block_exit_versions.insert(key.clone(), self.counters.clone());
             bb.instructions = new_instructions;
             self.blocks.insert(key, bb);
+        }
+
+        // 3. Patch Phi sources for back-edges
+        for bb in self.blocks.values_mut() {
+            for inst in &mut bb.instructions {
+                if let IRInstruction::Phi { ref mut sources, .. } = inst {
+                    for (op, pred) in sources.iter_mut() {
+                        if let Operand::Var { name, ref mut version } = op {
+                            if let Some(versions) = block_exit_versions.get(pred) {
+                                if let Some(v) = versions.get(name) {
+                                    *version = *v;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 

@@ -45,16 +45,16 @@ MiniCompiler is a lexical and syntax analyzer for a C-like language, implemented
 cargo build
 
 # Run the lexer
-cargo run -- lex --input examples/hello.src
+cargo run -- lex --input examples/basic/hello.src
 
 # Run the parser (outputs pretty-printed AST)
-cargo run -- parse --input examples/hello.src
+cargo run -- parse --input examples/basic/hello.src
 
 # Run the IR generator (SSA form)
-cargo run -- ir --input examples/hello.src
+cargo run -- ir --input examples/basic/hello.src
 
 # Generate x86-64 assembly
-cargo run -- compile --input examples/hello.src --output hello.asm
+cargo run -- compile --input examples/basic/hello.src --output hello.asm
 
 # Assemble and link (Linux x86-64)
 nasm -f elf64 hello.asm -o hello.o
@@ -63,14 +63,14 @@ ld hello.o runtime.o -o hello
 ./hello
 
 # Generate CFG visualization
-cargo run -- ir --input examples/hello.src --format dot --output cfg.dot
+cargo run -- ir --input examples/basic/hello.src --format dot --output cfg.dot
 dot -Tpng cfg.dot -o cfg.png
 
 # Report IR statistics
-cargo run -- ir --input examples/hello.src --stats
+cargo run -- ir --input examples/basic/hello.src --stats
 
 # Dump all debug info (Tokens, AST, SymTable, IR)
-cargo run -- dump --input examples/hello.src
+cargo run -- dump --input examples/basic/hello.src
 ```
 
 ### Running Tests

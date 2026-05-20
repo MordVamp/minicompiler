@@ -40,7 +40,7 @@ LINE:COL  TOKEN_TYPE  "LEXEME"  [LITERAL_VALUE]
 
 **Example:**
 ```bash
-cargo run -- lex --input examples/hello.src
+cargo run -- lex --input examples/basic/hello.src
 # Output:
 # 1:1 KW_FN "fn"
 # 1:4 IDENTIFIER "main"
@@ -73,17 +73,17 @@ cargo run -- parse --input <FILE> [--output <FILE>] [--ast-format <FORMAT>] [--v
 **Examples:**
 ```bash
 # Pretty-print AST as text
-cargo run -- parse --input examples/hello.src
+cargo run -- parse --input examples/basic/hello.src
 
 # Generate Graphviz DOT file then render to PNG
-cargo run -- parse --input examples/hello.src --ast-format dot --output ast.dot
+cargo run -- parse --input examples/basic/hello.src --ast-format dot --output ast.dot
 dot -Tpng ast.dot -o ast.png
 
 # Save AST as JSON
-cargo run -- parse --input examples/hello.src --ast-format json --output ast.json
+cargo run -- parse --input examples/basic/hello.src --ast-format json --output ast.json
 
 # Verbose mode
-cargo run -- parse --input examples/hello.src --verbose
+cargo run -- parse --input examples/basic/hello.src --verbose
 ```
 
 ---
@@ -108,11 +108,11 @@ cargo run -- check --input <FILE> [--verbose]
 **Examples:**
 ```bash
 # Basic check
-cargo run -- check --input examples/hello.src
+cargo run -- check --input examples/basic/hello.src
 # Output: OK
 
 # Check with symbol table dump
-cargo run -- check --input examples/hello.src --verbose
+cargo run -- check --input examples/basic/hello.src --verbose
 # Output:
 #   Semantic analysis passed.
 #   --- Symbol Table Dump ---
@@ -121,7 +121,7 @@ cargo run -- check --input examples/hello.src --verbose
 #   -------------------------
 
 # Check a file with errors (prints to stderr)
-cargo run -- check --input examples/bad.src
+cargo run -- check --input examples/basic/error.src
 # Stderr:
 #   Semantic Error at line 3, column 10: Undefined variable 'x'
 ```
@@ -149,17 +149,17 @@ cargo run -- ir --input <FILE> [--output <FILE>] [--verbose]
 **Examples:**
 ```bash
 # Print IR as Text to console
-cargo run -- ir --input examples/hello.src
+cargo run -- ir --input examples/basic/hello.src
 
 # Generate CFG in DOT format and render to PNG
-cargo run -- ir --input examples/hello.src --format dot --output cfg.dot
+cargo run -- ir --input examples/basic/hello.src --format dot --output cfg.dot
 dot -Tpng cfg.dot -o cfg.png
 
 # Report IR statistics (counts of instructions and blocks)
-cargo run -- ir --input examples/hello.src --stats
+cargo run -- ir --input examples/basic/hello.src --stats
 
 # Save IR to file
-cargo run -- ir --input examples/hello.src --output output.ir
+cargo run -- ir --input examples/basic/hello.src --output output.ir
 ```
 
 **IR output format:**
@@ -196,7 +196,7 @@ cargo run -- compile --input <FILE> [--output <FILE>] [--verbose]
 **Example:**
 ```bash
 # Generate assembly and save to file
-cargo run -- compile --input examples/hello.src --output hello.asm
+cargo run -- compile --input examples/basic/hello.src --output hello.asm
 
 # Assemble and link with runtime
 nasm -f elf64 hello.asm -o hello.o
@@ -249,7 +249,7 @@ cargo run -- compile --input <FILE> [--output <FILE>] [--optimize] [--stdout]
 
 ```bash
 # 1. Генерация ассемблера
-cargo run -- compile --input examples/test_extern.src --output test.asm
+cargo run -- compile --input examples/sprint7/test_extern.src --output test.asm
 
 # 2. Сборка объектного файла (требуется nasm)
 nasm -f elf64 test.asm -o test.o

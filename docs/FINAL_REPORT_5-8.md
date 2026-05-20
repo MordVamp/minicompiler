@@ -33,25 +33,25 @@
 ### 1. Демонстрация продвинутых ошибок
 Запустите проверку на файле с ошибкой. Вы увидите контекст кода и указатель на ошибку.
 ```bash
-cargo run -- check --input examples/error.src
+cargo run -- check --input examples/basic/error.src
 ```
 
 ### 2. Демонстрация оптимизаций
 Запустите компиляцию тестового файла с флагом `--optimize`. Вы увидите, как мертвый код исчезает, а выражения сворачиваются.
 ```bash
-cargo run -- compile --input examples/opt_test.src --optimize --stdout
+cargo run -- compile --input examples/optimizations/opt_test.src --optimize --stdout
 ```
 
 ### 3. Демонстрация массивов и внешних функций
 Компиляция и просмотр ассемблера для теста внешних вызовов.
 ```bash
-cargo run -- compile --input examples/test_extern.src --stdout
+cargo run -- compile --input examples/sprint7/test_extern.src --stdout
 ```
 
 ### 4. Финальный аккорд: Raytracer
 Скомпилируйте и запустите рейтрейсер. Это докажет, что компилятор справляется с реальными нагрузками.
 ```bash
-cargo run -- compile --input examples/raytracer.src --output raytracer.asm
+cargo run -- compile --input examples/demos/raytracer.src --output raytracer.asm
 nasm -f elf64 raytracer.asm -o raytracer.o
 gcc raytracer.o -o raytracer -no-pie
 ./raytracer > sphere.ppm
