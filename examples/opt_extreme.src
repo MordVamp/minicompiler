@@ -1,0 +1,23 @@
+fn main() -> int {
+    int base = 100;
+    int factor = 2;
+    int total = base * factor; 
+    
+    int sum = 0;
+    int i = 0;
+    int loop_limit = 0;
+    
+    // While loop that never executes
+    while (i < loop_limit) {
+        sum = sum + total;
+        i = i + 1;
+    }
+    
+    int result = total + sum;
+    
+    if (result == 200) {
+        return result;
+    } else {
+        return -1;
+    }
+}

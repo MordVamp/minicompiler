@@ -268,6 +268,8 @@ impl IRGenerator {
                     // NasM strings can be created exactly like the string contents, but we should make sure we quote them or define them byte by byte
                     self.strings.push((label.clone(), format!("`{}`", s.replace("`", "\\`"))));
                     Operand::Label { name: label }
+                } else if let crate::lexer::token::LiteralValue::Boolean(b) = value {
+                    Operand::Literal { value: if *b { "1".to_string() } else { "0".to_string() } }
                 } else {
                     Operand::Literal { value: value.to_string() }
                 }

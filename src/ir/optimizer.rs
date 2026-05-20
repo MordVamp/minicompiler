@@ -13,6 +13,8 @@ impl IROptimizer {
 
     pub fn optimize(&mut self) {
         self.constant_propagation();
+        self.constant_folding();
+        self.algebraic_simplification();
         self.dead_code_elimination();
     }
 
@@ -30,6 +32,89 @@ impl IROptimizer {
         for block in self.blocks.values_mut() {
             for inst in &mut block.instructions {
                 Self::replace_operands_static(inst, &constants);
+            }
+        }
+    }
+
+    fn constant_folding(&mut self) {
+        for block in self.blocks.values_mut() {
+            for inst in &mut block.instructions {
+                let folded = match inst {
+                    IRInstruction::Add { left: Operand::Literal { value: l }, right: Operand::Literal { value: r }, .. } => {
+                        if let (Ok(lv), Ok(rv)) = (l.parse::<i64>(), r.parse::<i64>()) {
+                            Some(Operand::Literal { value: (lv + rv).to_string() })
+                        } else { None }
+                    }
+                    IRInstruction::Sub { left: Operand::Literal { value: l }, right: Operand::Literal { value: r }, .. } => {
+                        if let (Ok(lv), Ok(rv)) = (l.parse::<i64>(), r.parse::<i64>()) {
+                            Some(Operand::Literal { value: (lv - rv).to_string() })
+                        } else { None }
+                    }
+                    IRInstruction::Mul { left: Operand::Literal { value: l }, right: Operand::Literal { value: r }, .. } => {
+                        if let (Ok(lv), Ok(rv)) = (l.parse::<i64>(), r.parse::<i64>()) {
+                            Some(Operand::Literal { value: (lv * rv).to_string() })
+                        } else { None }
+                    }
+                    IRInstruction::Div { left: Operand::Literal { value: l }, right: Operand::Literal { value: r }, .. } => {
+                        if let (Ok(lv), Ok(rv)) = (l.parse::<i64>(), r.parse::<i64>()) {
+                            if rv != 0 { Some(Operand::Literal { value: (lv / rv).to_string() }) } else { None }
+                        } else { None }
+                    }
+                    IRInstruction::Equal { left: Operand::Literal { value: l }, right: Operand::Literal { value: r }, .. } => {
+                        Some(Operand::Literal { value: if l == r { "1".to_string() } else { "0".to_string() } })
+                    }
+                    _ => None,
+                };
+
+                if let Some(val) = folded {
+                    if let Some(res) = Self::get_instruction_result_static(inst) {
+                        *inst = IRInstruction::Move { result: res.clone(), source: val };
+                    }
+                }
+            }
+        }
+    }
+
+    fn algebraic_simplification(&mut self) {
+        for block in self.blocks.values_mut() {
+            for inst in &mut block.instructions {
+                let simplified = match inst {
+                    IRInstruction::Add { left, right, .. } => {
+                        if let Operand::Literal { value } = right {
+                            if value == "0" { Some(left.clone()) } else { None }
+                        } else if let Operand::Literal { value } = left {
+                            if value == "0" { Some(right.clone()) } else { None }
+                        } else { None }
+                    }
+                    IRInstruction::Sub { left, right, .. } => {
+                        if let Operand::Literal { value } = right {
+                            if value == "0" { Some(left.clone()) } else { None }
+                        } else { None }
+                    }
+                    IRInstruction::Mul { left, right, .. } => {
+                        if let Operand::Literal { value } = right {
+                            if value == "1" { Some(left.clone()) } 
+                            else if value == "0" { Some(Operand::Literal { value: "0".to_string() }) }
+                            else { None }
+                        } else if let Operand::Literal { value } = left {
+                            if value == "1" { Some(right.clone()) }
+                            else if value == "0" { Some(Operand::Literal { value: "0".to_string() }) }
+                            else { None }
+                        } else { None }
+                    }
+                    IRInstruction::Div { left, right, .. } => {
+                        if let Operand::Literal { value } = right {
+                            if value == "1" { Some(left.clone()) } else { None }
+                        } else { None }
+                    }
+                    _ => None,
+                };
+
+                if let Some(val) = simplified {
+                    if let Some(res) = Self::get_instruction_result_static(inst) {
+                        *inst = IRInstruction::Move { result: res.clone(), source: val };
+                    }
+                }
             }
         }
     }

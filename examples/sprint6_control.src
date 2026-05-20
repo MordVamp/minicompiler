@@ -1,0 +1,18 @@
+fn main() -> int {
+    int sum = 0;
+    int limit = 10;
+    
+    // Test while and if (Sprint 6)
+    int i = 1;
+    while (i <= limit) {
+        if (i % 2 == 0) {
+            sum = sum + i;
+        } else {
+            // skip odd
+        }
+        i = i + 1;
+    }
+    
+    // Expected sum of even numbers 1-10 is 30
+    return sum;
+}

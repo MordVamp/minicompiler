@@ -121,6 +121,7 @@ impl X86Generator {
         match inst {
             IRInstruction::Add { result, left, right } | IRInstruction::Sub { result, left, right } |
             IRInstruction::Mul { result, left, right } | IRInstruction::Div { result, left, right } |
+            IRInstruction::Mod { result, left, right } |
             IRInstruction::And { result, left, right } | IRInstruction::Or { result, left, right } |
             IRInstruction::Xor { result, left, right } |
             IRInstruction::Equal { result, left, right } | IRInstruction::NotEqual { result, left, right } |
@@ -163,7 +164,7 @@ impl X86Generator {
             IRInstruction::Return { value: Some(op) } | IRInstruction::Param { value: op } => {
                 track(op);
             }
-            _ => {}
+            IRInstruction::Return { value: None } | IRInstruction::Jump { .. } => {}
         }
     }
 
@@ -220,6 +221,31 @@ impl X86Generator {
                 self.output.push_str(&ExpressionGenerator::load_operand("rax", left, &mut |o| sf.get_offset(o)));
                 self.output.push_str("  cqo\n");
                 self.output.push_str(&format!("  idiv {}\n", right_str));
+                self.output.push_str(&ExpressionGenerator::store_operand(result, "rax", &mut |o| sf.get_offset(o)));
+            }
+            IRInstruction::Mod { result, left, right } => {
+                let right_str = Self::static_operand_to_str(right, sf);
+                self.output.push_str(&ExpressionGenerator::load_operand("rax", left, &mut |o| sf.get_offset(o)));
+                self.output.push_str("  cqo\n");
+                self.output.push_str(&format!("  idiv {}\n", right_str));
+                self.output.push_str(&ExpressionGenerator::store_operand(result, "rdx", &mut |o| sf.get_offset(o)));
+            }
+            IRInstruction::And { result, left, right } => {
+                let right_str = Self::static_operand_to_str(right, sf);
+                self.output.push_str(&ExpressionGenerator::load_operand("rax", left, &mut |o| sf.get_offset(o)));
+                self.output.push_str(&format!("  and rax, {}\n", right_str));
+                self.output.push_str(&ExpressionGenerator::store_operand(result, "rax", &mut |o| sf.get_offset(o)));
+            }
+            IRInstruction::Or { result, left, right } => {
+                let right_str = Self::static_operand_to_str(right, sf);
+                self.output.push_str(&ExpressionGenerator::load_operand("rax", left, &mut |o| sf.get_offset(o)));
+                self.output.push_str(&format!("  or rax, {}\n", right_str));
+                self.output.push_str(&ExpressionGenerator::store_operand(result, "rax", &mut |o| sf.get_offset(o)));
+            }
+            IRInstruction::Xor { result, left, right } => {
+                let right_str = Self::static_operand_to_str(right, sf);
+                self.output.push_str(&ExpressionGenerator::load_operand("rax", left, &mut |o| sf.get_offset(o)));
+                self.output.push_str(&format!("  xor rax, {}\n", right_str));
                 self.output.push_str(&ExpressionGenerator::store_operand(result, "rax", &mut |o| sf.get_offset(o)));
             }
             IRInstruction::Move { result, source } => {
@@ -311,7 +337,17 @@ impl X86Generator {
                 self.output.push_str("  add rax, rcx\n");
                 self.output.push_str(&ExpressionGenerator::store_operand(result, "rax", &mut |o| sf.get_offset(o)));
             }
-            _ => { self.output.push_str(&format!("  ; Unimplemented: {}\n", inst)); }
+            IRInstruction::Phi { result, sources } => {
+                let result_offset = sf.get_offset(result);
+                for (op, _) in sources {
+                    let source_offset = sf.get_offset(op);
+                    if source_offset != result_offset {
+                        self.output.push_str(&ExpressionGenerator::load_operand("rax", op, &mut |o| sf.get_offset(o)));
+                        self.output.push_str(&ExpressionGenerator::store_operand(result, "rax", &mut |o| sf.get_offset(o)));
+                    }
+                }
+                self.output.push_str(&format!("  ; PHI {} handled via aliasing or moves\n", result));
+            }
         }
     }
 

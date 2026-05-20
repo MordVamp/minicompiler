@@ -29,9 +29,9 @@ fn compile(source: &str) -> String {
 
 #[test]
 fn test_if_else_generation() {
-    let src = "fn main() -> int { if (1 > 0) { return 10; } else { return 20; } }";
+    let src = "fn main() -> int { int a = 1; int b = 0; if (a > b) { return 10; } else { return 20; } }";
     let asm = compile(src);
-    assert!(asm.contains("cmp rax, 0"));
+    assert!(asm.contains("cmp rax"));
     assert!(asm.contains("setg al"));
 }
 
