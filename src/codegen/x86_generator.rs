@@ -379,19 +379,21 @@ impl X86Generator {
                 self.output.push_str(&ExpressionGenerator::store_operand(result, "rax", &mut |o| sf.get_offset(o)));
             }
             IRInstruction::Phi { result, sources } => {
+                // Only emit a copy for non-literal sources whose stack slot differs from the result.
+                // Literal sources are constant-propagation artifacts: the literal was already
+                // materialized by a Move in the predecessor block. Emitting it here would
+                // re-initialize the variable on every loop iteration (inside the loop-header label).
                 let result_offset = sf.get_offset(result);
-                let mut any_moved = false;
                 for (op, _) in sources {
+                    if let Operand::Literal { .. } | Operand::Label { .. } = op {
+                        continue; // already handled by predecessor block's Move instruction
+                    }
                     let source_offset = sf.get_offset(op);
                     if source_offset != result_offset {
                         self.output.push_str(&ExpressionGenerator::load_operand("rax", op, &mut |o| sf.get_offset(o)));
                         self.output.push_str(&ExpressionGenerator::store_operand(result, "rax", &mut |o| sf.get_offset(o)));
-                        any_moved = true;
                     }
                 }
-                // If all sources alias the same stack slot, no code is needed.
-                // No PHI comment needed — it's either a no-op or the moves above handle it.
-                let _ = any_moved;
             }
         }
     }

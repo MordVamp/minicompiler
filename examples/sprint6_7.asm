@@ -45,9 +45,9 @@ main:
   mov eax, 0
   call printf
   mov [rbp-8], rax
-.for_cond_2:
   xor eax, eax
-  mov [rbp-120], rax
+  mov [rbp-96], rax
+.for_cond_2:
   cmp rax, 10
   setl al
   movzx rax, al
@@ -55,26 +55,26 @@ main:
   jne .for_body_3
   jmp .for_end_5
 .for_body_3:
-  mov rax, [rbp-120]
+  mov rax, [rbp-96]
   imul rax, 10
   mov [rbp-136], rax
   lea rax, [rbp-88]
-  mov rcx, [rbp-120]
+  mov rcx, [rbp-96]
   shl rcx, 3
   add rax, rcx
   mov rcx, [rbp-136]
   mov [rax], rcx
 .for_update_4:
-  mov rax, [rbp-120]
+  mov rax, [rbp-96]
   inc rax
-  mov [rbp-120], rax
+  mov [rbp-96], rax
   jmp .for_cond_2
 .for_end_5:
+  xor eax, eax
+  mov [rbp-160], rax
+  xor eax, eax
+  mov [rbp-168], rax
 .while_cond_6:
-  xor eax, eax
-  mov [rbp-192], rax
-  xor eax, eax
-  mov [rbp-200], rax
   cmp rax, 10
   setl al
   movzx rax, al
@@ -83,7 +83,7 @@ main:
   jmp .while_end_8
 .while_body_7:
   lea rax, [rbp-88]
-  mov rcx, [rbp-200]
+  mov rcx, [rbp-168]
   shl rcx, 3
   add rax, rcx
   mov rcx, [rax]
@@ -98,29 +98,28 @@ main:
   call is_even
   cmp rax, 0
   je .else_11
-  jmp .then_9
+.then_9:
+  mov rax, [rbp-160]
+  add rax, qword [rbp-232]
+  mov [rbp-160], rax
+  mov rdi, str_12
+  mov rsi, [rbp-232]
+  mov eax, 0
+  call printf
+  jmp .end_if_10
 .else_11:
   mov rdi, str_13
   mov rsi, [rbp-232]
   mov eax, 0
   call printf
-  jmp .end_if_10
-.then_9:
-  mov rax, [rbp-192]
-  add rax, qword [rbp-232]
-  mov [rbp-192], rax
-  mov rdi, str_12
-  mov rsi, [rbp-232]
-  mov eax, 0
-  call printf
 .end_if_10:
-  mov rax, [rbp-200]
+  mov rax, [rbp-168]
   inc rax
-  mov [rbp-200], rax
+  mov [rbp-168], rax
   jmp .while_cond_6
 .while_end_8:
   mov rdi, str_14
-  mov rsi, [rbp-192]
+  mov rsi, [rbp-160]
   mov eax, 0
   call printf
   mov rdi, 16
@@ -135,7 +134,7 @@ main:
   mov rdi, str_16
   mov eax, 0
   call printf
-  mov rax, [rbp-192]
+  mov rax, [rbp-160]
   mov rsp, rbp
   pop rbp
   ret
