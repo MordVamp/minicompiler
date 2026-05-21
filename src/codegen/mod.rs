@@ -5,5 +5,6 @@ pub mod control_flow_generator;
 pub mod expression_generator;
 pub mod label_manager;
 pub mod optimizer;
+pub mod register_allocator;
 
 pub use x86_generator::X86Generator;
