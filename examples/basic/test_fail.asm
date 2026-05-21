@@ -22,13 +22,13 @@ main:
   mov rsp, rbp
   pop rbp
   ret
-.end_if_2:
+  jmp .end_if_2
 .else_3:
   mov rax, 20
   mov rsp, rbp
   pop rbp
   ret
-  jmp .end_if_2
+.end_if_2:
 .main_epilogue_fallback:
   mov rsp, rbp
   pop rbp

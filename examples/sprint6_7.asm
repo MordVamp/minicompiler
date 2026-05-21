@@ -24,13 +24,13 @@ is_even:
   cqo
   mov rcx, 2
   idiv rcx
-  mov rbx, rdx
-  mov rax, rbx
+  mov r12, rdx
+  mov rax, r12
   cmp rax, 0
   sete al
   movzx rax, al
-  mov r12, rax
-  mov rax, r12
+  mov rbx, rax
+  mov rax, rbx
   pop r12
   pop rbx
   mov rsp, rbp
@@ -117,11 +117,21 @@ main:
   mov rsi, [rbp-176]
   mov eax, 0
   call printf
+  jmp .end_if_10
+.then_9:
+  mov rax, [rbp-160]
+  add rax, qword [rbp-176]
+  mov r14, rax
+  mov [rbp-160], r14
+  mov rdi, str_12
+  mov rsi, [rbp-176]
+  mov eax, 0
+  call printf
 .end_if_10:
   mov rax, [rbp-168]
   inc rax
-  mov rbx, rax
-  mov [rbp-168], rbx
+  mov r12, rax
+  mov [rbp-168], r12
   jmp .while_cond_6
 .while_end_8:
   mov rdi, str_14
@@ -130,12 +140,12 @@ main:
   call printf
   mov rdi, 16
   call malloc
-  mov [rbp-200], rax
+  mov [rbp-208], rax
   mov rdi, str_15
-  mov rsi, [rbp-200]
+  mov rsi, [rbp-208]
   mov eax, 0
   call printf
-  mov rdi, [rbp-200]
+  mov rdi, [rbp-208]
   call free
   mov rdi, str_16
   mov eax, 0

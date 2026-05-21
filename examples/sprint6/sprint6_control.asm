@@ -37,16 +37,22 @@ main:
   cqo
   mov rcx, 2
   idiv rcx
-  mov r15, rdx
-  mov rax, r15
+  mov r14, rdx
+  mov rax, r14
   cmp rax, 0
   sete al
   movzx rax, al
-  mov r14, rax
-  mov rax, r14
+  mov r15, rax
+  mov rax, r15
   cmp rax, 0
   je .else_6
 .else_6:
+  jmp .end_if_5
+.then_4:
+  mov rax, rbx
+  add rax, r13
+  mov r15, rax
+  mov rbx, r15
 .end_if_5:
   mov rax, r13
   inc rax

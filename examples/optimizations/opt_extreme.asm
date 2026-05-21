@@ -55,17 +55,6 @@ main:
   mov rax, r15
   cmp rax, 0
   je .else_6
-.then_4:
-  mov rax, r14
-  pop r15
-  pop r14
-  pop r13
-  pop r12
-  pop rbx
-  mov rsp, rbp
-  pop rbp
-  ret
-.end_if_5:
 .else_6:
   mov rax, 1
   neg rax
@@ -80,6 +69,17 @@ main:
   pop rbp
   ret
   jmp .end_if_5
+.then_4:
+  mov rax, r14
+  pop r15
+  pop r14
+  pop r13
+  pop r12
+  pop rbx
+  mov rsp, rbp
+  pop rbp
+  ret
+.end_if_5:
 .main_epilogue_fallback:
   pop r15
   pop r14

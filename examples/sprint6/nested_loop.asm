@@ -46,6 +46,11 @@ main:
   mov rax, r14
   cmp rax, 0
   je .end_if_6
+.then_5:
+  mov rax, rbx
+  add rax, r12
+  mov r13, rax
+  mov rbx, r13
 .end_if_6:
 .for_update_3:
   mov rax, r12

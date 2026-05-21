@@ -405,38 +405,45 @@ impl IROptimizer {
 
             // Rebuild successors first (with fall-throughs!)
             let sorted_names = self.get_sorted_block_names();
-            for (idx, name) in sorted_names.iter().enumerate() {
+            for name in &sorted_names {
                 if let Some(block) = self.blocks.get_mut(name) {
+                    let orig_successors = block.successors.clone();
                     block.successors.clear();
                     
-                    // Add explicit jumps
+                    // Add explicit jumps and find potential fall-throughs
+                    let mut has_unconditional_jump_or_return = false;
+                    let mut conditional_targets = Vec::new();
+                    
                     for inst in &block.instructions {
                         match inst {
-                            IRInstruction::Jump { label: Operand::Label { name } } |
+                            IRInstruction::Jump { label: Operand::Label { name } } => {
+                                has_unconditional_jump_or_return = true;
+                                if !block.successors.contains(name) {
+                                    block.successors.push(name.clone());
+                                }
+                            }
+                            IRInstruction::Return { .. } => {
+                                has_unconditional_jump_or_return = true;
+                            }
                             IRInstruction::JumpIfTrue { label: Operand::Label { name }, .. } |
                             IRInstruction::JumpIfFalse { label: Operand::Label { name }, .. } => {
                                 if !block.successors.contains(name) {
                                     block.successors.push(name.clone());
                                 }
+                                conditional_targets.push(name.clone());
                             }
                             _ => {}
                         }
                     }
                     
-                    // Add fall-through successor if not terminated by Jump or Return
-                    let mut has_terminal = false;
-                    if let Some(last) = block.instructions.last() {
-                        match last {
-                            IRInstruction::Jump { .. } | IRInstruction::Return { .. } => {
-                                has_terminal = true;
+                    // If the block is not terminated by an unconditional jump or return,
+                    // we must retain any original successors that are not the explicit conditional target(s)
+                    // as they represent the valid fall-through path.
+                    if !has_unconditional_jump_or_return {
+                        for orig_succ in &orig_successors {
+                            if !block.successors.contains(orig_succ) {
+                                block.successors.push(orig_succ.clone());
                             }
-                            _ => {}
-                        }
-                    }
-                    if !has_terminal && idx + 1 < sorted_names.len() {
-                        let next_name = &sorted_names[idx + 1];
-                        if !next_name.starts_with("func_") && !block.successors.contains(next_name) {
-                            block.successors.push(next_name.clone());
                         }
                     }
                 }

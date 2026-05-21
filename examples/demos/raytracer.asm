@@ -15,7 +15,7 @@ global main
 main:
   push rbp
   mov rbp, rsp
-  sub rsp, 112
+  sub rsp, 192
   push rbx
   push r12
   push r13
@@ -35,7 +35,7 @@ main:
   call printf
 .for_cond_4:
   mov rax, [rbp-32]
-  cmp rax, [rbp-64]
+  cmp rax, [rbp-96]
   setl al
   movzx rax, al
   mov rbx, rax
@@ -44,55 +44,58 @@ main:
   jne .for_body_5
   jmp .for_end_7
 .for_body_5:
-  jmp .for_cond_8
-.for_end_7:
 .for_cond_8:
-  mov rax, [rbp-88]
+  mov rax, [rbp-120]
   cmp rax, [rbp-40]
-  setl al
-  movzx rax, al
-  mov r13, rax
-  mov rax, r13
-  cmp rax, 0
-  jne .for_body_9
-  jmp .for_end_11
-.for_body_9:
-  mov rax, [rbp-88]
-  sub rax, qword [rbp-80]
-  mov r14, rax
-  mov rbx, r14
-  mov rax, [rbp-32]
-  sub rax, qword [rbp-72]
-  mov r15, rax
-  mov r12, r15
-  mov rax, rbx
-  imul rax, rbx
-  mov r13, rax
-  mov rax, r12
-  imul rax, r12
-  mov r14, rax
-  mov rax, r13
-  add rax, r14
-  mov r15, rax
-  mov rbx, r15
-  mov rax, rbx
-  cmp rax, [rbp-48]
   setl al
   movzx rax, al
   mov r12, rax
   mov rax, r12
+  cmp rax, 0
+  jne .for_body_9
+  jmp .for_end_11
+.for_body_9:
+  mov rax, [rbp-120]
+  sub rax, qword [rbp-112]
+  mov r13, rax
+  mov [rbp-144], r13
+  mov rax, [rbp-32]
+  sub rax, qword [rbp-104]
+  mov r14, rax
+  mov [rbp-152], r14
+  mov rax, [rbp-144]
+  imul rax, qword [rbp-144]
+  mov r15, rax
+  mov rax, [rbp-152]
+  imul rax, qword [rbp-152]
+  mov rbx, rax
+  mov rax, r15
+  add rax, rbx
+  mov r12, rax
+  mov [rbp-160], r12
+  mov rax, [rbp-160]
+  cmp rax, [rbp-80]
+  setl al
+  movzx rax, al
+  mov r13, rax
+  mov rax, r13
   cmp rax, 0
   je .else_14
 .else_14:
   mov rdi, str_16
   mov eax, 0
   call printf
+  jmp .end_if_13
+.then_12:
+  mov rdi, str_15
+  mov eax, 0
+  call printf
 .end_if_13:
 .for_update_10:
-  mov rax, [rbp-88]
+  mov rax, [rbp-120]
   inc rax
-  mov rbx, rax
-  mov [rbp-88], rbx
+  mov r14, rax
+  mov [rbp-120], r14
   jmp .for_cond_8
 .for_end_11:
   mov rdi, str_17
@@ -101,9 +104,10 @@ main:
 .for_update_6:
   mov rax, [rbp-32]
   inc rax
-  mov r12, rax
-  mov [rbp-32], r12
+  mov r15, rax
+  mov [rbp-32], r15
   jmp .for_cond_4
+.for_end_7:
 .main_epilogue_fallback:
   pop r15
   pop r14
