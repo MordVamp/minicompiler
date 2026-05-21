@@ -131,7 +131,11 @@ impl X86Generator {
                 track(left);
                 track(right);
             }
-            IRInstruction::Not { result, operand } | IRInstruction::Neg { result, operand } | IRInstruction::Move { result, source: operand } => {
+            IRInstruction::Move { result, source: operand } => {
+                track(result);
+                track(operand);
+            }
+            IRInstruction::Not { result, operand } | IRInstruction::Neg { result, operand } => {
                 track(result);
                 track(operand);
             }
@@ -168,22 +172,39 @@ impl X86Generator {
         }
     }
 
+    /// Returns blocks in Reverse Post-Order (RPO) — a stable, correct linear order
+    /// for code emission. By iterating successors in reverse order, we ensure that
+    /// leaf blocks (like for_end or function ends) are visited first in DFS,
+    /// placed early in post-order, and thus end up LAST in the final RPO.
+    /// This eliminates fall-through bugs caused by empty blocks.
     fn get_reachable_blocks(&self, start: &String) -> Vec<String> {
-        let mut visited = Vec::new();
-        let mut stack = vec![start.clone()];
-        while let Some(label) = stack.pop() {
-            if visited.contains(&label) { continue; }
-            visited.push(label.clone());
-            if let Some(blk) = self.blocks.get(&label) {
-                for succ in &blk.successors {
+        let mut post_order: Vec<String> = Vec::new();
+        let mut visited: std::collections::HashSet<String> = std::collections::HashSet::new();
+
+        fn dfs(
+            node: &str,
+            blocks: &std::collections::HashMap<String, BasicBlock>,
+            visited: &mut std::collections::HashSet<String>,
+            post_order: &mut Vec<String>,
+        ) {
+            if !visited.insert(node.to_string()) { return; }
+            if let Some(blk) = blocks.get(node) {
+                // Visit successors in REVERSE order.
+                // This forces 'end' blocks to be pushed to post_order early,
+                // meaning they will appear late in the RPO list.
+                for succ in blk.successors.iter().rev() {
                     if !succ.starts_with("func_") {
-                        stack.push(succ.clone());
+                        dfs(succ, blocks, visited, post_order);
                     }
                 }
             }
+            post_order.push(node.to_string());
         }
-        if let Some(pos) = visited.iter().position(|l| l == start) { visited.swap(0, pos); }
-        visited
+
+        dfs(start, &self.blocks, &mut visited, &mut post_order);
+
+        post_order.reverse();
+        post_order
     }
 
     fn generate_block(&mut self, label: &String) {
@@ -217,17 +238,35 @@ impl X86Generator {
                 self.output.push_str(&ExpressionGenerator::store_operand(result, "rax", &mut |o| sf.get_offset(o)));
             }
             IRInstruction::Div { result, left, right } => {
-                let right_str = Self::static_operand_to_str(right, sf);
                 self.output.push_str(&ExpressionGenerator::load_operand("rax", left, &mut |o| sf.get_offset(o)));
                 self.output.push_str("  cqo\n");
-                self.output.push_str(&format!("  idiv {}\n", right_str));
+                // idiv does NOT accept immediate operands — always load divisor into rcx
+                match right {
+                    Operand::Literal { value } => {
+                        self.output.push_str(&format!("  mov rcx, {}\n", value));
+                        self.output.push_str("  idiv rcx\n");
+                    }
+                    _ => {
+                        let right_str = Self::static_operand_to_str(right, sf);
+                        self.output.push_str(&format!("  idiv {}\n", right_str));
+                    }
+                }
                 self.output.push_str(&ExpressionGenerator::store_operand(result, "rax", &mut |o| sf.get_offset(o)));
             }
             IRInstruction::Mod { result, left, right } => {
-                let right_str = Self::static_operand_to_str(right, sf);
                 self.output.push_str(&ExpressionGenerator::load_operand("rax", left, &mut |o| sf.get_offset(o)));
                 self.output.push_str("  cqo\n");
-                self.output.push_str(&format!("  idiv {}\n", right_str));
+                // idiv does NOT accept immediate operands — always load divisor into rcx
+                match right {
+                    Operand::Literal { value } => {
+                        self.output.push_str(&format!("  mov rcx, {}\n", value));
+                        self.output.push_str("  idiv rcx\n");
+                    }
+                    _ => {
+                        let right_str = Self::static_operand_to_str(right, sf);
+                        self.output.push_str(&format!("  idiv {}\n", right_str));
+                    }
+                }
                 self.output.push_str(&ExpressionGenerator::store_operand(result, "rdx", &mut |o| sf.get_offset(o)));
             }
             IRInstruction::And { result, left, right } => {
@@ -249,6 +288,7 @@ impl X86Generator {
                 self.output.push_str(&ExpressionGenerator::store_operand(result, "rax", &mut |o| sf.get_offset(o)));
             }
             IRInstruction::Move { result, source } => {
+                if sf.get_offset(result) == sf.get_offset(source) { return; }
                 self.output.push_str(&ExpressionGenerator::load_operand("rax", source, &mut |o| sf.get_offset(o)));
                 self.output.push_str(&ExpressionGenerator::store_operand(result, "rax", &mut |o| sf.get_offset(o)));
             }
@@ -324,6 +364,7 @@ impl X86Generator {
                 self.output.push_str("  mov rcx, [rax]\n");
                 self.output.push_str(&ExpressionGenerator::store_operand(result, "rcx", &mut |o| sf.get_offset(o)));
             }
+
             IRInstruction::Store { address, source } => {
                 self.output.push_str(&ExpressionGenerator::load_operand("rax", address, &mut |o| sf.get_offset(o)));
                 self.output.push_str(&ExpressionGenerator::load_operand("rcx", source, &mut |o| sf.get_offset(o)));
@@ -339,14 +380,18 @@ impl X86Generator {
             }
             IRInstruction::Phi { result, sources } => {
                 let result_offset = sf.get_offset(result);
+                let mut any_moved = false;
                 for (op, _) in sources {
                     let source_offset = sf.get_offset(op);
                     if source_offset != result_offset {
                         self.output.push_str(&ExpressionGenerator::load_operand("rax", op, &mut |o| sf.get_offset(o)));
                         self.output.push_str(&ExpressionGenerator::store_operand(result, "rax", &mut |o| sf.get_offset(o)));
+                        any_moved = true;
                     }
                 }
-                self.output.push_str(&format!("  ; PHI {} handled via aliasing or moves\n", result));
+                // If all sources alias the same stack slot, no code is needed.
+                // No PHI comment needed — it's either a no-op or the moves above handle it.
+                let _ = any_moved;
             }
         }
     }

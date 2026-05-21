@@ -23,57 +23,41 @@ main:
   mov [rbp-16], rax
   mov rax, 1
   mov [rbp-24], rax
-  jmp .while_cond_1
 .while_cond_1:
-  ; PHI sum_4 handled via aliasing or moves
-  ; PHI i_4 handled via aliasing or moves
-  ; PHI limit_3 handled via aliasing or moves
-  mov rax, [rbp-24]
   cmp rax, [rbp-16]
   setle al
   movzx rax, al
-  mov [rbp-32], rax
   cmp rax, 0
   jne .while_body_2
   jmp .while_end_3
+.while_body_2:
+  mov rax, [rbp-24]
+  cqo
+  mov rcx, 2
+  idiv rcx
+  mov [rbp-40], rdx
+  mov rax, [rbp-40]
+  cmp rax, 0
+  sete al
+  movzx rax, al
+  cmp rax, 0
+  je .else_6
+.else_6:
+  jmp .end_if_5
+.then_4:
+  mov rax, [rbp-8]
+  add rax, qword [rbp-24]
+  mov [rbp-8], rax
+.end_if_5:
+  mov rax, [rbp-24]
+  inc rax
+  mov [rbp-24], rax
+  jmp .while_cond_1
 .while_end_3:
-  ; PHI sum_6 handled via aliasing or moves
-  ; PHI limit_5 handled via aliasing or moves
-  ; PHI i_6 handled via aliasing or moves
-  ; PHI t1_3 handled via aliasing or moves
-  ; PHI t2_3 handled via aliasing or moves
-  ; PHI t4_3 handled via aliasing or moves
-  ; PHI t3_3 handled via aliasing or moves
   mov rax, [rbp-8]
   mov rsp, rbp
   pop rbp
   ret
-.while_body_2:
-  mov rax, [rbp-24]
-  cqo
-  idiv 2
-  mov [rbp-72], rdx
-  mov rax, [rbp-72]
-  cmp rax, 0
-  sete al
-  movzx rax, al
-  mov [rbp-80], rax
-  cmp rax, 0
-  je .else_6
-.then_4:
-  mov rax, [rbp-8]
-  add rax, qword [rbp-24]
-  mov [rbp-88], rax
-  mov [rbp-8], rax
-  jmp .end_if_5
-.else_6:
-  jmp .end_if_5
-.end_if_5:
-  mov rax, [rbp-24]
-  inc rax
-  mov [rbp-96], rax
-  mov [rbp-24], rax
-  jmp .while_cond_1
 .main_epilogue_fallback:
   mov rsp, rbp
   pop rbp

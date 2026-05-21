@@ -15,13 +15,9 @@ global main
 main:
   push rbp
   mov rbp, rsp
-  sub rsp, 32
+  sub rsp, 16
 .func_main:
   mov rax, 10
-  mov [rbp-8], rax
-  mov [rbp-16], rax
-  mov [rbp-24], rax
-  mov rax, [rbp-16]
   mov rsp, rbp
   pop rbp
   ret

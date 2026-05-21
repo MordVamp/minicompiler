@@ -11,36 +11,12 @@ extern exit
 
 section .text
 
-global is_even
-is_even:
-  push rbp
-  mov rbp, rsp
-  sub rsp, 32
-  mov [rbp-8], rdi
-.func_is_even:
-  mov rax, [rbp-8]
-  cqo
-  mov rcx, 2
-  idiv rcx
-  mov [rbp-16], rdx
-  mov rax, [rbp-16]
-  cmp rax, 0
-  sete al
-  movzx rax, al
-  mov rsp, rbp
-  pop rbp
-  ret
-.is_even_epilogue_fallback:
-  mov rsp, rbp
-  pop rbp
-  ret
-
-global do_nothing
-do_nothing:
+global main
+main:
   push rbp
   mov rbp, rsp
   sub rsp, 112
-.func_do_nothing:
+.func_main:
   xor eax, eax
   mov [rbp-8], rax
   xor eax, eax
@@ -53,8 +29,15 @@ do_nothing:
   jne .for_body_2
   jmp .for_end_4
 .for_body_2:
-  mov rdi, [rbp-16]
-  call is_even
+  mov rax, [rbp-16]
+  cqo
+  mov rcx, 2
+  idiv rcx
+  mov [rbp-32], rdx
+  mov rax, [rbp-32]
+  cmp rax, 0
+  sete al
+  movzx rax, al
   cmp rax, 0
   je .end_if_6
 .then_5:
@@ -68,19 +51,10 @@ do_nothing:
   mov [rbp-16], rax
   jmp .for_cond_1
 .for_end_4:
-.do_nothing_epilogue_fallback:
+  mov rax, [rbp-8]
   mov rsp, rbp
   pop rbp
   ret
-
-global main
-main:
-  push rbp
-  mov rbp, rsp
-  sub rsp, 16
-.func_main:
-  call do_nothing
-  mov [rbp-8], rax
 .main_epilogue_fallback:
   mov rsp, rbp
   pop rbp

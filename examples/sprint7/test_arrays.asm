@@ -3,6 +3,10 @@ bits 64
 
 extern print_int
 extern read_int
+extern printf
+extern scanf
+extern malloc
+extern free
 extern exit
 
 section .text
@@ -11,59 +15,50 @@ global main
 main:
   push rbp
   mov rbp, rsp
-  sub rsp, 208
+  sub rsp, 160
 .func_main:
   lea rax, [rbp-40]
   mov rcx, 0
   shl rcx, 3
   add rax, rcx
-  mov [rbp-48], rax
   mov rcx, 10
   mov [rax], rcx
   lea rax, [rbp-40]
   mov rcx, 1
   shl rcx, 3
   add rax, rcx
-  mov [rbp-72], rax
   mov rcx, 20
   mov [rax], rcx
   lea rax, [rbp-40]
   mov rcx, 0
   shl rcx, 3
   add rax, rcx
-  mov [rbp-96], rax
   mov rcx, [rax]
-  mov [rbp-104], rcx
+  mov [rbp-72], rcx
   lea rax, [rbp-40]
   mov rcx, 1
   shl rcx, 3
   add rax, rcx
-  mov [rbp-112], rax
   mov rcx, [rax]
-  mov [rbp-120], rcx
-  mov rax, [rbp-104]
-  add rax, qword [rbp-120]
-  mov [rbp-128], rax
-  mov [rbp-136], rax
-  lea rax, [rbp-160]
+  mov [rbp-88], rcx
+  mov rax, [rbp-72]
+  add rax, qword [rbp-88]
+  lea rax, [rbp-128]
   mov rcx, 0
   shl rcx, 3
   add rax, rcx
-  mov [rbp-168], rax
   mov rcx, 1
   mov [rax], rcx
-  lea rax, [rbp-160]
+  lea rax, [rbp-128]
   mov rcx, 1
   shl rcx, 3
   add rax, rcx
-  mov [rbp-176], rax
   mov rcx, 2
   mov [rax], rcx
-  lea rax, [rbp-160]
+  lea rax, [rbp-128]
   mov rcx, 2
   shl rcx, 3
   add rax, rcx
-  mov [rbp-192], rax
   mov rcx, 3
   mov [rax], rcx
 .main_epilogue_fallback:

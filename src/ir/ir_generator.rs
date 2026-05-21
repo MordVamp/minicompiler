@@ -52,8 +52,20 @@ impl IRGenerator {
         }
         self.current_block = label.clone();
         
-        // Link the new block to its predecessor if it's not a function start
-        if !label.starts_with("func_") && prev != "entry" {
+        let mut has_fallthrough = false;
+        if let Some(pbb) = self.blocks.get(&prev) {
+            if let Some(last) = pbb.instructions.last() {
+                match last {
+                    IRInstruction::Jump { .. } | IRInstruction::Return { .. } => has_fallthrough = false,
+                    _ => has_fallthrough = true,
+                }
+            } else {
+                has_fallthrough = true;
+            }
+        }
+
+        // Link the new block to its predecessor if it's not a function start and there's a valid fall-through
+        if !label.starts_with("func_") && prev != "entry" && has_fallthrough {
             if let Some(bb) = self.blocks.get_mut(&label) {
                 if !bb.predecessors.contains(&prev) {
                     bb.predecessors.push(prev.clone());

@@ -1,4 +1,7 @@
 end_if_2:
+  t2_2 = PHI t2_0[func_factorial], t2_1[then_1]
+  t1_2 = PHI t1_1[func_factorial], t1_1[then_1]
+  result_2 = PHI result_0[func_factorial], result_1[then_1]
   RETURN n_0
 
 entry:

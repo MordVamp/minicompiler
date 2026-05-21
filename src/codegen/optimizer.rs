@@ -119,6 +119,52 @@ impl PeepholeOptimizer {
             i += 1;
         }
 
-        optimized.join("\n")
+        // Pass 2: Identify read stack slots
+        let mut read_slots = std::collections::HashSet::new();
+        for line in &optimized {
+            let s = line.trim();
+            let mut start = 0;
+            while let Some(idx) = s[start..].find("[rbp-") {
+                let abs_idx = start + idx;
+                if let Some(end_idx) = s[abs_idx..].find(']') {
+                    let slot = &s[abs_idx..abs_idx+end_idx+1];
+                    let is_write = s.starts_with("mov ") && s[4..].trim_start().starts_with(slot) && !s.contains("qword");
+                    let is_write_qword = s.starts_with("mov qword ") && s[10..].trim_start().starts_with(slot);
+                    
+                    if !(is_write || is_write_qword) {
+                        read_slots.insert(slot.to_string());
+                    }
+                    start = abs_idx + end_idx + 1;
+                } else {
+                    break;
+                }
+            }
+        }
+
+        // Pass 3: Remove dead writes
+        let mut final_asm = Vec::new();
+        for line in optimized {
+            let s = line.trim();
+            let mut is_dead_write = false;
+            
+            if s.starts_with("mov ") {
+                let dest_part = s.replace("mov qword ", "").replace("mov ", "");
+                let dest_part = dest_part.trim_start();
+                if dest_part.starts_with("[rbp-") {
+                    if let Some(end_idx) = dest_part.find(']') {
+                        let slot = &dest_part[..end_idx+1];
+                        if !read_slots.contains(slot) {
+                            is_dead_write = true;
+                        }
+                    }
+                }
+            }
+            
+            if !is_dead_write {
+                final_asm.push(line);
+            }
+        }
+
+        final_asm.join("\n")
     }
 }

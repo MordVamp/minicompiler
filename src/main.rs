@@ -399,12 +399,21 @@ fn run_compile(input_path: &PathBuf, output_path: Option<&PathBuf>, verbose: boo
 
     let mut ssa_builder = minicompiler::ir::ssa_constructor::SSAConstructor::new(ir_gen.blocks);
     ssa_builder.construct();
-
+    
     let mut blocks = ssa_builder.blocks;
     if optimize {
         let mut ir_optimizer = minicompiler::ir::optimizer::IROptimizer::new(blocks);
         ir_optimizer.optimize();
         blocks = ir_optimizer.blocks;
+        
+        println!("--- Blocks Dump After Opt ---");
+        for (name, blk) in &blocks {
+            println!("Block: {}", name);
+            for inst in &blk.instructions {
+                println!("  {:?}", inst);
+            }
+        }
+        println!("-------------------");
     }
 
     let mut codegen = minicompiler::codegen::X86Generator::new(blocks, ir_gen.functions, ir_gen.strings);

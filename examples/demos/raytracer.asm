@@ -15,118 +15,94 @@ global main
 main:
   push rbp
   mov rbp, rsp
-  sub rsp, 240
+  sub rsp, 288
 .func_main:
-  mov rax, 100
-  mov [rbp-8], rax
-  mov rax, 100
-  mov [rbp-16], rax
-  mov rax, 50
-  mov [rbp-24], rax
-  mov rax, 50
-  mov [rbp-32], rax
-  mov rax, 30
-  mov [rbp-40], rax
-  imul rax, qword [rbp-40]
-  mov [rbp-48], rax
-  mov [rbp-56], rax
   mov rdi, str_1
   mov eax, 0
   call printf
-  mov [rbp-64], rax
+  mov [rbp-8], rax
   mov rdi, str_2
-  mov rsi, [rbp-8]
-  mov rdx, [rbp-16]
+  mov rsi, 100
+  mov rdx, 100
   mov eax, 0
   call printf
-  mov [rbp-72], rax
+  mov [rbp-16], rax
   mov rdi, str_3
   mov eax, 0
   call printf
-  mov [rbp-80], rax
-  xor eax, eax
-  mov [rbp-88], rax
-  jmp .for_cond_4
+  mov [rbp-24], rax
 .for_cond_4:
-  mov rax, [rbp-88]
-  cmp rax, [rbp-16]
-  setl al
-  movzx rax, al
-  mov [rbp-96], rax
-  cmp rax, 0
-  jne .for_body_5
-  jmp .for_end_7
-.for_end_7:
-.for_body_5:
   xor eax, eax
-  mov [rbp-104], rax
-  jmp .for_cond_8
-.for_cond_8:
-  mov rax, [rbp-104]
-  cmp rax, [rbp-8]
-  setl al
-  movzx rax, al
-  mov [rbp-112], rax
-  cmp rax, 0
-  jne .for_body_9
-  jmp .for_end_11
-.for_end_11:
-  mov rdi, str_17
-  mov eax, 0
-  call printf
-  mov [rbp-120], rax
-  jmp .for_update_6
-.for_update_6:
-  mov rax, [rbp-88]
-  inc rax
-  mov [rbp-128], rax
+  mov [rbp-32], rax
+  mov rax, 100
+  mov [rbp-40], rax
+  mov rax, 900
+  mov [rbp-80], rax
+  mov rax, 30
   mov [rbp-88], rax
-  jmp .for_cond_4
+  mov rax, 100
+  mov [rbp-96], rax
+  mov rax, 50
+  mov [rbp-104], rax
+  mov rax, 50
+  mov [rbp-112], rax
+  mov rax, [rbp-32]
+  cmp rax, [rbp-96]
+  jl .for_body_5
+  jmp .for_end_7
+.for_body_5:
+  jmp .for_cond_8
+.for_end_7:
+.for_cond_8:
+  xor eax, eax
+  mov [rbp-128], rax
+  cmp rax, [rbp-40]
+  jl .for_body_9
+  jmp .for_end_11
 .for_body_9:
-  mov rax, [rbp-104]
-  sub rax, qword [rbp-24]
-  mov [rbp-136], rax
-  mov [rbp-144], rax
-  mov rax, [rbp-88]
-  sub rax, qword [rbp-32]
-  mov [rbp-152], rax
+  mov rax, [rbp-128]
+  sub rax, qword [rbp-112]
   mov [rbp-160], rax
-  mov rax, [rbp-144]
-  imul rax, qword [rbp-144]
   mov [rbp-168], rax
-  mov rax, [rbp-160]
-  imul rax, qword [rbp-160]
+  mov rax, [rbp-32]
+  sub rax, qword [rbp-104]
   mov [rbp-176], rax
-  mov rax, [rbp-168]
-  add rax, qword [rbp-176]
   mov [rbp-184], rax
+  mov rax, [rbp-168]
+  imul rax, qword [rbp-168]
   mov [rbp-192], rax
-  cmp rax, [rbp-56]
-  setl al
-  movzx rax, al
+  mov rax, [rbp-184]
+  imul rax, qword [rbp-184]
   mov [rbp-200], rax
-  cmp rax, 0
-  je .else_14
-.then_12:
-  mov rdi, str_15
-  mov eax, 0
-  call printf
+  mov rax, [rbp-192]
+  add rax, qword [rbp-200]
   mov [rbp-208], rax
-  jmp .end_if_13
+  mov [rbp-216], rax
+  cmp rax, [rbp-80]
+  jge .else_14
 .else_14:
   mov rdi, str_16
   mov eax, 0
   call printf
-  mov [rbp-216], rax
-  jmp .end_if_13
+  mov [rbp-232], rax
 .end_if_13:
-  jmp .for_update_10
 .for_update_10:
-  mov rax, [rbp-104]
+  mov rax, [rbp-128]
   inc rax
-  mov [rbp-224], rax
-  mov [rbp-104], rax
+  mov [rbp-264], rax
+  mov [rbp-128], rax
   jmp .for_cond_8
+.for_end_11:
+  mov rdi, str_17
+  mov eax, 0
+  call printf
+  mov [rbp-272], rax
+.for_update_6:
+  mov rax, [rbp-32]
+  inc rax
+  mov [rbp-280], rax
+  mov [rbp-32], rax
+  jmp .for_cond_4
 .main_epilogue_fallback:
   mov rsp, rbp
   pop rbp

@@ -15,56 +15,56 @@ global main
 main:
   push rbp
   mov rbp, rsp
-  sub rsp, 128
+  sub rsp, 160
 .func_main:
+.while_cond_1:
   mov rax, 200
   mov [rbp-8], rax
-  mov [rbp-16], rax
   xor eax, eax
   mov [rbp-24], rax
   xor eax, eax
   mov [rbp-32], rax
-.while_cond_1:
-  ; PHI t3_2 handled via aliasing or moves
-  ; PHI i_3 handled via aliasing or moves
-  ; PHI sum_3 handled via aliasing or moves
-  ; PHI t4_2 handled via aliasing or moves
-  cmp rax, 0
+  xor eax, eax
+  mov [rbp-40], rax
+  mov rax, 2
+  mov [rbp-48], rax
+  mov rax, 100
+  mov [rbp-56], rax
+  mov rax, [rbp-40]
+  cmp rax, [rbp-32]
   jl .while_body_2
-.while_end_3:
-  ; PHI t3_3 handled via aliasing or moves
-  ; PHI i_4 handled via aliasing or moves
-  ; PHI sum_4 handled via aliasing or moves
-  ; PHI t2_2 handled via aliasing or moves
-  ; PHI t4_3 handled via aliasing or moves
-  mov rax, [rbp-16]
-  add rax, qword [rbp-24]
+  jmp .while_end_3
+.while_body_2:
+  mov rax, [rbp-24]
+  add rax, qword [rbp-8]
   mov [rbp-72], rax
+  mov [rbp-24], rax
+  mov rax, [rbp-40]
+  inc rax
   mov [rbp-80], rax
+  mov [rbp-40], rax
+  jmp .while_cond_1
+.while_end_3:
+  mov rax, [rbp-8]
+  add rax, qword [rbp-24]
+  mov [rbp-88], rax
+  mov [rbp-96], rax
   cmp rax, 200
   jne .else_6
 .then_4:
-  mov rax, [rbp-80]
-  mov rsp, rbp
-  pop rbp
-  ret
-  jmp .end_if_5
-.else_6:
-  mov rax, 1
-  neg rax
-  mov [rbp-96], rax
+  mov rax, [rbp-96]
   mov rsp, rbp
   pop rbp
   ret
 .end_if_5:
-.while_body_2:
-  mov rax, [rbp-16]
-  mov [rbp-104], rax
-  mov [rbp-24], rax
+.else_6:
   mov rax, 1
-  mov [rbp-112], rax
-  mov [rbp-32], rax
-  jmp .while_cond_1
+  neg rax
+  mov [rbp-152], rax
+  mov rsp, rbp
+  pop rbp
+  ret
+  jmp .end_if_5
 .main_epilogue_fallback:
   mov rsp, rbp
   pop rbp

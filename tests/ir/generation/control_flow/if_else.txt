@@ -1,8 +1,11 @@
 else_3:
-  y_1 = MOVE 2
+  y_3 = MOVE 2
   JUMP end_if_2
 
 end_if_2:
+  y_2 = PHI y_1[then_1], y_3[else_3]
+  x_2 = PHI x_1[then_1], x_1[else_3]
+  t1_2 = PHI t1_1[then_1], t1_1[else_3]
 
 entry:
 
@@ -12,6 +15,6 @@ func_f:
   JUMP_IF_NOT t1_1 else_3
 
 then_1:
-  y_2 = MOVE 1
+  y_1 = MOVE 1
   JUMP end_if_2
 

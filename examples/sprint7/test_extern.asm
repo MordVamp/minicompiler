@@ -20,31 +20,24 @@ main:
   mov rdi, str_1
   mov eax, 0
   call printf
-  mov [rbp-8], rax
   mov rdi, str_2
   mov eax, 0
   call printf
-  mov [rbp-16], rax
   mov rdi, 40
   call malloc
-  mov [rbp-24], rax
   mov [rbp-32], rax
   mov rdi, str_3
   mov rsi, [rbp-32]
   mov eax, 0
   call printf
-  mov [rbp-40], rax
   mov rdi, [rbp-32]
   call free
-  mov [rbp-48], rax
   mov rdi, str_4
   mov eax, 0
   call printf
-  mov [rbp-56], rax
   mov rdi, str_5
   mov eax, 0
   call printf
-  mov [rbp-64], rax
 .main_epilogue_fallback:
   mov rsp, rbp
   pop rbp

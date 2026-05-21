@@ -30,7 +30,18 @@ impl SSAConstructor {
     /// This implementation performs linear basic block SSA versioning.
     pub fn construct(&mut self) {
         let mut keys: Vec<String> = self.blocks.keys().cloned().collect();
-        keys.sort(); 
+        keys.sort_by(|a, b| {
+            let get_num = |s: &str| -> Option<usize> {
+                s.rsplit('_').next().and_then(|num| num.parse().ok())
+            };
+            let num_a = get_num(a).unwrap_or(0);
+            let num_b = get_num(b).unwrap_or(0);
+            if num_a != num_b {
+                num_a.cmp(&num_b)
+            } else {
+                a.cmp(b)
+            }
+        });
         
         let mut block_exit_versions: HashMap<String, HashMap<String, usize>> = HashMap::new();
 
@@ -39,38 +50,31 @@ impl SSAConstructor {
             
             // 1. Insert PHI nodes if there are multiple predecessors with different versions
             if bb.predecessors.len() > 1 {
-                let mut vars_to_phi = std::collections::HashSet::new();
-                for pred in &bb.predecessors {
-                    if let Some(versions) = block_exit_versions.get(pred) {
-                        for (var, _) in versions {
-                            vars_to_phi.insert(var.clone());
-                        }
-                    }
-                }
+                let mut vars_to_phi: Vec<String> = self.counters.keys().cloned().collect();
+                vars_to_phi.sort();
 
                 for var in vars_to_phi {
                     let mut sources = Vec::new();
-                    let mut different = false;
-                    let mut first_v = None;
                     
                     for pred in &bb.predecessors {
-                        if let Some(versions) = block_exit_versions.get(pred) {
-                            let v = *versions.get(&var).unwrap_or(&0);
-                            sources.push((Operand::Var { name: var.clone(), version: v }, pred.clone()));
-                            if first_v.is_none() { first_v = Some(v); }
-                            else if first_v != Some(v) { different = true; }
-                        }
+                        // For forward edges, we get the current version.
+                        // For back-edges, we temporarily use 0, which will be patched in Pass 3.
+                        let v = if let Some(versions) = block_exit_versions.get(pred) {
+                            *versions.get(&var).unwrap_or(&0)
+                        } else {
+                            0 
+                        };
+                        sources.push((Operand::Var { name: var.clone(), version: v }, pred.clone()));
                     }
 
-                    if different {
-                        let new_v = self.new_version(&var);
-                        let phi_node = IRInstruction::Phi { 
-                            result: Operand::Var { name: var.clone(), version: new_v },
-                            sources 
-                        };
-                        bb.instructions.insert(0, phi_node);
-                    }
+                    let new_v = self.new_version(&var);
+                    let phi_node = IRInstruction::Phi { 
+                        result: Operand::Var { name: var.clone(), version: new_v },
+                        sources 
+                    };
+                    bb.instructions.insert(0, phi_node);
                 }
+
             } else if bb.predecessors.len() == 1 {
                 // Inherit versions from the single predecessor
                 if let Some(versions) = block_exit_versions.get(&bb.predecessors[0]) {

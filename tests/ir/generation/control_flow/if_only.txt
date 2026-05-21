@@ -1,4 +1,7 @@
 end_if_2:
+  y_2 = PHI y_0[func_f], y_1[then_1]
+  x_2 = PHI x_1[func_f], x_1[then_1]
+  t1_2 = PHI t1_1[func_f], t1_1[then_1]
 
 entry:
 
