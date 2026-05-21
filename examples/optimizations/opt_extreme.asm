@@ -27,30 +27,31 @@ main:
   xor eax, eax
   mov [rbp-40], rax
   mov rax, 2
-  mov [rbp-48], rax
   mov rax, 100
-  mov [rbp-56], rax
   mov rax, [rbp-40]
   cmp rax, [rbp-32]
-  jl .while_body_2
+  setl al
+  movzx rax, al
+  cmp rax, 0
+  jne .while_body_2
   jmp .while_end_3
 .while_body_2:
   mov rax, [rbp-24]
   add rax, qword [rbp-8]
-  mov [rbp-72], rax
   mov [rbp-24], rax
   mov rax, [rbp-40]
   inc rax
-  mov [rbp-80], rax
   mov [rbp-40], rax
   jmp .while_cond_1
 .while_end_3:
   mov rax, [rbp-8]
   add rax, qword [rbp-24]
-  mov [rbp-88], rax
   mov [rbp-96], rax
   cmp rax, 200
-  jne .else_6
+  sete al
+  movzx rax, al
+  cmp rax, 0
+  je .else_6
 .then_4:
   mov rax, [rbp-96]
   mov rsp, rbp
@@ -60,7 +61,6 @@ main:
 .else_6:
   mov rax, 1
   neg rax
-  mov [rbp-152], rax
   mov rsp, rbp
   pop rbp
   ret

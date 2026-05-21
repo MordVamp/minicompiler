@@ -15,22 +15,19 @@ global main
 main:
   push rbp
   mov rbp, rsp
-  sub rsp, 288
+  sub rsp, 352
 .func_main:
   mov rdi, str_1
   mov eax, 0
   call printf
-  mov [rbp-8], rax
   mov rdi, str_2
   mov rsi, 100
   mov rdx, 100
   mov eax, 0
   call printf
-  mov [rbp-16], rax
   mov rdi, str_3
   mov eax, 0
   call printf
-  mov [rbp-24], rax
 .for_cond_4:
   xor eax, eax
   mov [rbp-32], rax
@@ -39,7 +36,6 @@ main:
   mov rax, 900
   mov [rbp-80], rax
   mov rax, 30
-  mov [rbp-88], rax
   mov rax, 100
   mov [rbp-96], rax
   mov rax, 50
@@ -48,7 +44,10 @@ main:
   mov [rbp-112], rax
   mov rax, [rbp-32]
   cmp rax, [rbp-96]
-  jl .for_body_5
+  setl al
+  movzx rax, al
+  cmp rax, 0
+  jne .for_body_5
   jmp .for_end_7
 .for_body_5:
   jmp .for_cond_8
@@ -57,16 +56,17 @@ main:
   xor eax, eax
   mov [rbp-128], rax
   cmp rax, [rbp-40]
-  jl .for_body_9
+  setl al
+  movzx rax, al
+  cmp rax, 0
+  jne .for_body_9
   jmp .for_end_11
 .for_body_9:
   mov rax, [rbp-128]
   sub rax, qword [rbp-112]
-  mov [rbp-160], rax
   mov [rbp-168], rax
   mov rax, [rbp-32]
   sub rax, qword [rbp-104]
-  mov [rbp-176], rax
   mov [rbp-184], rax
   mov rax, [rbp-168]
   imul rax, qword [rbp-168]
@@ -76,31 +76,34 @@ main:
   mov [rbp-200], rax
   mov rax, [rbp-192]
   add rax, qword [rbp-200]
-  mov [rbp-208], rax
-  mov [rbp-216], rax
   cmp rax, [rbp-80]
-  jge .else_14
+  setl al
+  movzx rax, al
+  cmp rax, 0
+  je .else_14
+  jmp .then_12
 .else_14:
   mov rdi, str_16
   mov eax, 0
   call printf
-  mov [rbp-232], rax
+  jmp .end_if_13
+.then_12:
+  mov rdi, str_15
+  mov eax, 0
+  call printf
 .end_if_13:
 .for_update_10:
   mov rax, [rbp-128]
   inc rax
-  mov [rbp-264], rax
   mov [rbp-128], rax
   jmp .for_cond_8
 .for_end_11:
   mov rdi, str_17
   mov eax, 0
   call printf
-  mov [rbp-272], rax
 .for_update_6:
   mov rax, [rbp-32]
   inc rax
-  mov [rbp-280], rax
   mov [rbp-32], rax
   jmp .for_cond_4
 .main_epilogue_fallback:

@@ -41,33 +41,31 @@ do_nothing:
   mov rbp, rsp
   sub rsp, 112
 .func_do_nothing:
-  xor eax, eax
-  mov [rbp-8], rax
-  xor eax, eax
-  mov [rbp-16], rax
 .for_cond_1:
+  xor eax, eax
+  mov [rbp-32], rax
+  xor eax, eax
+  mov [rbp-40], rax
   cmp rax, 5
-  setl al
-  movzx rax, al
-  cmp rax, 0
-  jne .for_body_2
+  jl .for_body_2
   jmp .for_end_4
 .for_body_2:
-  mov rdi, [rbp-16]
+  mov rdi, [rbp-40]
   call is_even
   cmp rax, 0
   je .end_if_6
+  jmp .then_5
+.for_end_4:
 .then_5:
-  mov rax, [rbp-8]
-  add rax, qword [rbp-16]
-  mov [rbp-8], rax
+  mov rax, [rbp-32]
+  add rax, qword [rbp-40]
+  mov [rbp-32], rax
 .end_if_6:
 .for_update_3:
-  mov rax, [rbp-16]
+  mov rax, [rbp-40]
   inc rax
-  mov [rbp-16], rax
+  mov [rbp-40], rax
   jmp .for_cond_1
-.for_end_4:
 .do_nothing_epilogue_fallback:
   mov rsp, rbp
   pop rbp
@@ -77,10 +75,38 @@ global main
 main:
   push rbp
   mov rbp, rsp
-  sub rsp, 16
+  sub rsp, 128
 .func_main:
   call do_nothing
   mov [rbp-8], rax
+.for_cond_1:
+  xor eax, eax
+  mov [rbp-40], rax
+  xor eax, eax
+  mov [rbp-48], rax
+  cmp rax, 5
+  setl al
+  movzx rax, al
+  cmp rax, 0
+  jne .for_body_2
+  jmp .for_end_4
+.for_body_2:
+  mov rdi, [rbp-48]
+  call is_even
+  cmp rax, 0
+  je .end_if_6
+  jmp .then_5
+.for_end_4:
+.then_5:
+  mov rax, [rbp-40]
+  add rax, qword [rbp-48]
+  mov [rbp-40], rax
+.end_if_6:
+.for_update_3:
+  mov rax, [rbp-48]
+  inc rax
+  mov [rbp-48], rax
+  jmp .for_cond_1
 .main_epilogue_fallback:
   mov rsp, rbp
   pop rbp

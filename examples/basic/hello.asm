@@ -15,20 +15,16 @@ global main
 main:
   push rbp
   mov rbp, rsp
-  sub rsp, 16
+  sub rsp, 32
 .func_main:
 .then_1:
+.end_if_2:
+  mov rax, 3.14
+  mov rax, 42
   mov rax, 10
   mov rsp, rbp
   pop rbp
   ret
-.end_if_2:
-.else_3:
-  mov rax, 20
-  mov rsp, rbp
-  pop rbp
-  ret
-  jmp .end_if_2
 .main_epilogue_fallback:
   mov rsp, rbp
   pop rbp
