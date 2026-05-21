@@ -17,11 +17,11 @@ main:
   mov rbp, rsp
   sub rsp, 112
 .func_main:
-.for_cond_1:
   xor eax, eax
   mov [rbp-8], rax
   xor eax, eax
   mov [rbp-16], rax
+.for_cond_1:
   cmp rax, 5
   setl al
   movzx rax, al

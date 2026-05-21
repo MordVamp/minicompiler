@@ -56,7 +56,8 @@ impl IRGenerator {
         if let Some(pbb) = self.blocks.get(&prev) {
             if let Some(last) = pbb.instructions.last() {
                 match last {
-                    IRInstruction::Jump { .. } | IRInstruction::Return { .. } => has_fallthrough = false,
+                    IRInstruction::Jump { .. } | IRInstruction::Return { .. }
+                    | IRInstruction::JumpIfTrue { .. } | IRInstruction::JumpIfFalse { .. } => has_fallthrough = false,
                     _ => has_fallthrough = true,
                 }
             } else {
@@ -193,8 +194,26 @@ impl IRGenerator {
                 let else_lbl = if else_branch.is_some() { self.new_label("else") } else { end_lbl.clone() };
 
                 self.emit(IRInstruction::JumpIfFalse { condition: cond_op, label: Operand::Label { name: else_lbl.clone() } });
-                self.emit(IRInstruction::Jump { label: Operand::Label { name: then_lbl.clone() } });
-                
+
+                // Add then_lbl as the fallthrough successor without emitting an explicit Jump.
+                // Insert at position 0 so the RPO DFS (which iterates successors in reverse)
+                // visits then_lbl last in DFS, placing it FIRST in the final RPO output —
+                // immediately after the conditional block so x86 fallthrough works correctly.
+                let cond_block = self.current_block.clone();
+                if !self.blocks.contains_key(&then_lbl) {
+                    self.blocks.insert(then_lbl.clone(), BasicBlock::new(then_lbl.clone()));
+                }
+                if let Some(pbb) = self.blocks.get_mut(&cond_block) {
+                    if !pbb.successors.contains(&then_lbl) {
+                        pbb.successors.insert(0, then_lbl.clone()); // at front so RPO visits it right after cond_block
+                    }
+                }
+                if let Some(tbb) = self.blocks.get_mut(&then_lbl) {
+                    if !tbb.predecessors.contains(&cond_block) {
+                        tbb.predecessors.push(cond_block);
+                    }
+                }
+
                 self.switch_block(then_lbl.clone());
                 self.visit_statement(then_branch);
                 self.emit(IRInstruction::Jump { label: Operand::Label { name: end_lbl.clone() } });
@@ -204,7 +223,7 @@ impl IRGenerator {
                     self.visit_statement(eb);
                     self.emit(IRInstruction::Jump { label: Operand::Label { name: end_lbl.clone() } });
                 }
-                
+
                 self.switch_block(end_lbl);
             }
             StatementNode::ReturnStmt { value, .. } => {

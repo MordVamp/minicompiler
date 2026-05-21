@@ -43,19 +43,19 @@ main:
   mov [rbp-88], rcx
   mov rax, [rbp-72]
   add rax, qword [rbp-88]
-  lea rax, [rbp-120]
+  lea rax, [rbp-128]
   mov rcx, 0
   shl rcx, 3
   add rax, rcx
   mov rcx, 1
   mov [rax], rcx
-  lea rax, [rbp-120]
+  lea rax, [rbp-128]
   mov rcx, 1
   shl rcx, 3
   add rax, rcx
   mov rcx, 2
   mov [rax], rcx
-  lea rax, [rbp-120]
+  lea rax, [rbp-128]
   mov rcx, 2
   shl rcx, 3
   add rax, rcx

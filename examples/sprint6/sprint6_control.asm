@@ -17,13 +17,13 @@ main:
   mov rbp, rsp
   sub rsp, 112
 .func_main:
-.while_cond_1:
   xor eax, eax
   mov [rbp-8], rax
   mov rax, 10
   mov [rbp-16], rax
   mov rax, 1
   mov [rbp-24], rax
+.while_cond_1:
   cmp rax, [rbp-16]
   setle al
   movzx rax, al
@@ -42,13 +42,12 @@ main:
   movzx rax, al
   cmp rax, 0
   je .else_6
-  jmp .then_4
-.else_6:
-  jmp .end_if_5
 .then_4:
   mov rax, [rbp-8]
   add rax, qword [rbp-24]
   mov [rbp-8], rax
+  jmp .end_if_5
+.else_6:
 .end_if_5:
   mov rax, [rbp-24]
   inc rax

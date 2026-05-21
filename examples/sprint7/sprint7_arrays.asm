@@ -47,11 +47,11 @@ main:
   add rax, rcx
   mov rcx, 50
   mov [rax], rcx
-.for_cond_1:
   xor eax, eax
   mov [rbp-88], rax
   xor eax, eax
-  mov [rbp-136], rax
+  mov [rbp-96], rax
+.for_cond_1:
   cmp rax, 5
   setl al
   movzx rax, al
@@ -60,7 +60,7 @@ main:
   jmp .for_end_4
 .for_body_2:
   lea rax, [rbp-40]
-  mov rcx, [rbp-136]
+  mov rcx, [rbp-96]
   shl rcx, 3
   add rax, rcx
   mov rcx, [rax]
@@ -69,9 +69,9 @@ main:
   add rax, qword [rbp-160]
   mov [rbp-88], rax
 .for_update_3:
-  mov rax, [rbp-136]
+  mov rax, [rbp-96]
   inc rax
-  mov [rbp-136], rax
+  mov [rbp-96], rax
   jmp .for_cond_1
 .for_end_4:
   mov rdi, str_5
