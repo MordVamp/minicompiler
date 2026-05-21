@@ -72,19 +72,7 @@ impl X86Generator {
 
         let reachable = self.get_reachable_blocks(&entry_label);
         
-        for p_name in &func.parameters {
-            let op = Operand::Var { name: p_name.clone(), version: 0 };
-            self.stack_frame.get_offset(&op);
-        }
-
-        for blk_label in &reachable {
-            let instructions = self.blocks.get(blk_label).map(|b| b.instructions.clone()).unwrap_or_default();
-            for inst in instructions {
-                self.track_operands(&inst);
-            }
-        }
-
-        // Run Register Allocation on ordered blocks (RPO)
+        // Run Register Allocation on ordered blocks (RPO) FIRST
         let mut ordered_blocks = Vec::new();
         for label in &reachable {
             if let Some(blk) = self.blocks.get(label) {
@@ -93,6 +81,20 @@ impl X86Generator {
         }
         let reg_alloc = crate::codegen::register_allocator::RegisterAllocator::allocate(&ordered_blocks);
         self.reg_alloc = Some(reg_alloc);
+
+        for p_name in &func.parameters {
+            let op = Operand::Var { name: p_name.clone(), version: 0 };
+            if self.reg_alloc.as_ref().and_then(|ra| ra.reg_for(&op)).is_none() {
+                self.stack_frame.get_offset(&op);
+            }
+        }
+
+        for blk_label in &reachable {
+            let instructions = self.blocks.get(blk_label).map(|b| b.instructions.clone()).unwrap_or_default();
+            for inst in instructions {
+                self.track_operands(&inst);
+            }
+        }
 
         self.output.push_str("  push rbp\n");
         self.output.push_str("  mov rbp, rsp\n");
@@ -136,9 +138,12 @@ impl X86Generator {
 
     fn track_operands(&mut self, inst: &IRInstruction) {
         let sf = &mut self.stack_frame;
+        let reg_alloc = &self.reg_alloc;
         let mut track = |op: &Operand| {
             if let Operand::Var { .. } | Operand::Temp { .. } = op {
-                sf.get_offset(op);
+                if reg_alloc.as_ref().and_then(|ra| ra.reg_for(op)).is_none() {
+                    sf.get_offset(op);
+                }
             }
         };
 
@@ -532,30 +537,8 @@ impl X86Generator {
                 code.push_str("  add rax, rcx\n");
                 code.push_str(&store);
             }
-            IRInstruction::Phi { result, sources } => {
-                let result_offset = self.stack_frame.get_offset(result);
-                for (op, _) in sources {
-                    if let Operand::Literal { .. } | Operand::Label { .. } = op {
-                        continue;
-                    }
-                    if let Some(r_reg) = self.reg_for(result) {
-                        let load = self.load_operand(r_reg, op);
-                        code.push_str(&load);
-                    } else {
-                        if let Some(s_reg) = self.reg_for(op) {
-                            let store = self.store_operand(result, s_reg);
-                            code.push_str(&store);
-                        } else {
-                            let source_offset = self.stack_frame.get_offset(op);
-                            if source_offset != result_offset {
-                                let load = self.load_operand("rax", op);
-                                let store = self.store_operand(result, "rax");
-                                code.push_str(&load);
-                                code.push_str(&store);
-                            }
-                        }
-                    }
-                }
+            IRInstruction::Phi { .. } => {
+                // Resolved at compile time by assigning all versions of the same variable to the same register or stack slot.
             }
         }
         self.output.push_str(&code);

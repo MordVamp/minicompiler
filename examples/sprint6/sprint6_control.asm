@@ -15,7 +15,7 @@ global main
 main:
   push rbp
   mov rbp, rsp
-  sub rsp, 80
+  sub rsp, 16
   push rbx
   push r12
   push r13
@@ -23,43 +23,38 @@ main:
   push r15
 .func_main:
 .while_cond_1:
-  mov [rbp-8], r12
-  mov r13, r14
-  mov rax, [rbp-24]
-  cmp rax, r13
+  mov rax, r13
+  cmp rax, r12
   setle al
   movzx rax, al
-  mov r15, rax
-  mov rax, r15
+  mov r14, rax
+  mov rax, r14
   cmp rax, 0
   jne .while_body_2
   jmp .while_end_3
 .while_body_2:
-  mov rax, [rbp-24]
+  mov rax, r13
   cqo
   mov rcx, 2
   idiv rcx
-  mov rbx, rdx
-  mov rax, rbx
+  mov r15, rdx
+  mov rax, r15
   cmp rax, 0
   sete al
   movzx rax, al
-  mov r15, rax
-  mov rax, r15
+  mov r14, rax
+  mov rax, r14
   cmp rax, 0
   je .else_6
 .else_6:
 .end_if_5:
-  mov r12, [rbp-8]
-  mov r14, r13
-  mov rbx, [rbp-24]
-  mov rax, rbx
+  mov rax, r13
   inc rax
-  mov r12, rax
-  mov [rbp-24], r12
+  mov r14, rax
+  mov r13, r14
   jmp .while_cond_1
 .while_end_3:
-  mov rax, [rbp-8]
+  mov rax, rbx
   pop r15
   pop r14
   pop r13

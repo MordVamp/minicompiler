@@ -15,7 +15,7 @@ global is_even
 is_even:
   push rbp
   mov rbp, rsp
-  sub rsp, 32
+  sub rsp, 16
   push rbx
   push r12
   mov [rbp-8], rdi
@@ -47,7 +47,7 @@ global main
 main:
   push rbp
   mov rbp, rsp
-  sub rsp, 384
+  sub rsp, 256
   push rbx
   push r12
   push r13
@@ -59,10 +59,6 @@ main:
   call printf
   mov [rbp-8], rax
 .for_cond_2:
-  mov r13, r12
-  mov r15, r14
-  mov r12, r14
-  mov [rbp-88], rbx
   mov rax, [rbp-120]
   cmp rax, 10
   setl al
@@ -75,77 +71,76 @@ main:
 .for_body_3:
   mov rax, [rbp-120]
   imul rax, 10
-  mov rbx, rax
+  mov r12, rax
   lea rax, [rbp-88]
   mov rcx, [rbp-120]
   shl rcx, 3
   add rax, rcx
-  mov r14, rax
-  mov [r14], rbx
+  mov r13, rax
+  mov [r13], r12
 .for_update_4:
   mov rax, [rbp-120]
   inc rax
-  mov rbx, rax
-  mov [rbp-120], rbx
+  mov r14, rax
+  mov [rbp-120], r14
   jmp .for_cond_2
 .for_end_5:
 .while_cond_6:
-  mov rax, [rbp-200]
+  mov rax, [rbp-168]
   cmp rax, 10
   setl al
   movzx rax, al
-  mov r14, rax
-  mov rax, r14
+  mov r15, rax
+  mov rax, r15
   cmp rax, 0
   jne .while_body_7
   jmp .while_end_8
 .while_body_7:
   lea rax, [rbp-88]
-  mov rcx, [rbp-200]
+  mov rcx, [rbp-168]
   shl rcx, 3
   add rax, rcx
-  mov r13, rax
-  mov r15, [r13]
-  mov [rbp-232], r15
-  mov rax, [rbp-232]
+  mov rbx, rax
+  mov r12, [rbx]
+  mov [rbp-176], r12
+  mov rax, [rbp-176]
   cqo
   mov rcx, 10
   idiv rcx
-  mov r12, rax
-  mov rdi, r12
+  mov r13, rax
+  mov rdi, r13
   call is_even
   cmp rax, 0
   je .else_11
 .else_11:
   mov rdi, str_13
-  mov rsi, [rbp-232]
+  mov rsi, [rbp-176]
   mov eax, 0
   call printf
 .end_if_10:
-  mov r15, [rbp-200]
-  mov rax, r15
+  mov rax, [rbp-168]
   inc rax
-  mov r12, rax
-  mov [rbp-200], r12
+  mov rbx, rax
+  mov [rbp-168], rbx
   jmp .while_cond_6
 .while_end_8:
   mov rdi, str_14
-  mov rsi, [rbp-192]
+  mov rsi, [rbp-160]
   mov eax, 0
   call printf
   mov rdi, 16
   call malloc
-  mov [rbp-320], rax
+  mov [rbp-200], rax
   mov rdi, str_15
-  mov rsi, [rbp-320]
+  mov rsi, [rbp-200]
   mov eax, 0
   call printf
-  mov rdi, [rbp-320]
+  mov rdi, [rbp-200]
   call free
   mov rdi, str_16
   mov eax, 0
   call printf
-  mov rax, [rbp-192]
+  mov rax, [rbp-160]
   pop r15
   pop r14
   pop r13

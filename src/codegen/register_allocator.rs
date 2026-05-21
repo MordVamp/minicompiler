@@ -16,15 +16,20 @@ pub struct LiveInterval {
 
 /// Result of register allocation for one function.
 pub struct RegAlloc {
-    /// Operand → physical register name (only for allocated operands).
-    pub reg_map: HashMap<Operand, &'static str>,
+    /// Operand key → physical register name (only for allocated operands).
+    pub reg_map: HashMap<String, &'static str>,
     /// Callee-saved registers actually used (need save/restore).
     pub used_regs: Vec<&'static str>,
 }
 
 impl RegAlloc {
     pub fn reg_for(&self, op: &Operand) -> Option<&'static str> {
-        self.reg_map.get(op).copied()
+        let key = match op {
+            Operand::Var { name, .. } => format!("v_{}", name),
+            Operand::Temp { id, version } => format!("t_{}_{}", id, version),
+            _ => return None,
+        };
+        self.reg_map.get(&key).copied()
     }
 }
 
@@ -113,7 +118,7 @@ impl RegisterAllocator {
         // active: (end, operand_key, reg_idx)
         let mut active: Vec<(usize, String, usize)> = Vec::new();
         let mut free: Vec<usize> = (0..ALLOCATABLE.len()).collect();
-        let mut reg_map: HashMap<Operand, &'static str> = HashMap::new();
+        let mut reg_map: HashMap<String, &'static str> = HashMap::new();
         let mut used_regs: Vec<&'static str> = Vec::new();
 
         for iv in &intervals {
@@ -137,6 +142,8 @@ impl RegisterAllocator {
                 }
             });
 
+            let key = Self::key(&iv.operand);
+
             if free.is_empty() {
                 // Spill: choose interval with largest end (not current)
                 if let Some(pos) = active.iter().position(|(end, _, _)| {
@@ -146,10 +153,10 @@ impl RegisterAllocator {
                         // Spill that one, give its register to current
                         let (_, spill_key, ri) = active.remove(pos);
                         // Remove spilled operand from reg_map
-                        reg_map.retain(|op, _| Self::key(op) != spill_key);
+                        reg_map.remove(&spill_key);
                         let reg = ALLOCATABLE[ri];
-                        reg_map.insert(iv.operand.clone(), reg);
-                        active.push((iv.end, Self::key(&iv.operand), ri));
+                        reg_map.insert(key.clone(), reg);
+                        active.push((iv.end, key, ri));
                         if !used_regs.contains(&reg) { used_regs.push(reg); }
                     }
                     // else: current interval is longer — leave it on stack
@@ -157,8 +164,8 @@ impl RegisterAllocator {
             } else {
                 let ri = free.remove(0);
                 let reg = ALLOCATABLE[ri];
-                reg_map.insert(iv.operand.clone(), reg);
-                active.push((iv.end, Self::key(&iv.operand), ri));
+                reg_map.insert(key.clone(), reg);
+                active.push((iv.end, key, ri));
                 if !used_regs.contains(&reg) { used_regs.push(reg); }
             }
         }
@@ -170,7 +177,7 @@ impl RegisterAllocator {
 
     fn key(op: &Operand) -> String {
         match op {
-            Operand::Var { name, version } => format!("v_{name}_{version}"),
+            Operand::Var { name, .. } => format!("v_{name}"),
             Operand::Temp { id, version } => format!("t_{id}_{version}"),
             Operand::Literal { value } => format!("l_{value}"),
             Operand::Label { name } => format!("lbl_{name}"),

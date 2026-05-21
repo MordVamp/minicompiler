@@ -15,7 +15,7 @@ global main
 main:
   push rbp
   mov rbp, rsp
-  sub rsp, 192
+  sub rsp, 64
   push rbx
   push r12
   push r13
@@ -58,46 +58,38 @@ main:
   mov rcx, 50
   mov [r12], rcx
 .for_cond_1:
-  mov [rbp-88], r13
-  mov r14, r15
-  mov r12, r14
-  mov r12, r15
-  mov r15, r14
-  mov r12, r14
-  mov r15, r12
-  mov r14, rbx
-  mov rax, r15
+  mov rax, r14
   cmp rax, 5
   setl al
   movzx rax, al
-  mov rbx, rax
-  mov rax, rbx
+  mov r15, rax
+  mov rax, r15
   cmp rax, 0
   jne .for_body_2
   jmp .for_end_4
 .for_body_2:
   lea rax, [rbp-40]
-  mov rcx, r15
+  mov rcx, r14
   shl rcx, 3
   add rax, rcx
-  mov rbx, rax
-  mov r14, [rbx]
-  mov rax, [rbp-88]
-  add rax, r14
-  mov rbx, rax
-  mov r13, rbx
+  mov r12, rax
+  mov r13, [r12]
+  mov rax, [rbp-48]
+  add rax, r13
+  mov r15, rax
+  mov [rbp-48], r15
 .for_update_3:
-  mov rax, r15
+  mov rax, r14
   inc rax
-  mov r13, rax
-  mov r12, r13
+  mov rbx, rax
+  mov r14, rbx
   jmp .for_cond_1
 .for_end_4:
   mov rdi, str_5
-  mov rsi, [rbp-88]
+  mov rsi, [rbp-48]
   mov eax, 0
   call printf
-  mov rax, [rbp-88]
+  mov rax, [rbp-48]
   pop r15
   pop r14
   pop r13

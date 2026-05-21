@@ -15,7 +15,7 @@ global main
 main:
   push rbp
   mov rbp, rsp
-  sub rsp, 160
+  sub rsp, 48
   push rbx
   push r12
   push r13
@@ -23,42 +23,40 @@ main:
   push r15
 .func_main:
 .while_cond_1:
-  mov r13, r12
-  mov r14, r15
-  mov rax, [rbp-40]
-  cmp rax, [rbp-32]
+  mov rax, [rbp-16]
+  cmp rax, [rbp-8]
   setl al
   movzx rax, al
-  mov r12, rax
-  mov rax, r12
+  mov r15, rax
+  mov rax, r15
   cmp rax, 0
   jne .while_body_2
   jmp .while_end_3
 .while_body_2:
-  mov rax, r14
+  mov rax, r13
   add rax, rbx
-  mov r12, rax
-  mov r15, r12
-  mov rax, [rbp-40]
+  mov r15, rax
+  mov r13, r15
+  mov rax, [rbp-16]
   inc rax
-  mov r12, rax
-  mov [rbp-40], r12
+  mov r15, rax
+  mov [rbp-16], r15
   jmp .while_cond_1
 .while_end_3:
   mov rax, rbx
-  add rax, r14
-  mov r12, rax
-  mov [rbp-96], r12
-  mov rax, [rbp-96]
+  add rax, r13
+  mov r15, rax
+  mov r14, r15
+  mov rax, r14
   cmp rax, 200
   sete al
   movzx rax, al
-  mov r12, rax
-  mov rax, r12
+  mov r15, rax
+  mov rax, r15
   cmp rax, 0
   je .else_6
 .then_4:
-  mov rax, [rbp-96]
+  mov rax, r14
   pop r15
   pop r14
   pop r13
@@ -68,35 +66,11 @@ main:
   pop rbp
   ret
 .end_if_5:
-  mov r12, rbx
-  mov r12, rbx
-  mov rbx, r12
-  mov rbx, r12
-  mov rbx, r12
-  mov rbx, r12
-  mov rbx, r12
-  mov rbx, r12
-  mov r12, rbx
-  mov r12, rbx
-  mov rbx, r12
-  mov rbx, r12
-  mov rbx, r13
-  mov rbx, r13
-  mov r15, r14
-  mov r15, r14
-  mov r12, [rbp-96]
-  mov r12, [rbp-96]
-  mov r13, [rbp-32]
-  mov r13, [rbp-32]
-  mov r14, [rbp-48]
-  mov r14, [rbp-48]
-  mov r15, [rbp-56]
-  mov r15, [rbp-56]
 .else_6:
   mov rax, 1
   neg rax
-  mov rbx, rax
-  mov rax, rbx
+  mov r15, rax
+  mov rax, r15
   pop r15
   pop r14
   pop r13

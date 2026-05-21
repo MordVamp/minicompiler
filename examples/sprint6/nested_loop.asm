@@ -15,7 +15,7 @@ global main
 main:
   push rbp
   mov rbp, rsp
-  sub rsp, 64
+  sub rsp, 16
   push rbx
   push r12
   push r13
@@ -23,37 +23,35 @@ main:
   push r15
 .func_main:
 .for_cond_1:
-  mov r13, r12
-  mov rax, r13
+  mov rax, r12
   cmp rax, 5
   setl al
   movzx rax, al
-  mov r14, rax
-  mov rax, r14
+  mov r13, rax
+  mov rax, r13
   cmp rax, 0
   jne .for_body_2
   jmp .for_end_4
 .for_body_2:
-  mov rax, r13
+  mov rax, r12
   cqo
   mov rcx, 2
   idiv rcx
-  mov r14, rdx
-  mov rax, r14
+  mov r15, rdx
+  mov rax, r15
   cmp rax, 0
   sete al
   movzx rax, al
-  mov r15, rax
-  mov rax, r15
+  mov r14, rax
+  mov rax, r14
   cmp rax, 0
   je .end_if_6
 .end_if_6:
-  mov r12, r13
 .for_update_3:
-  mov rax, r13
+  mov rax, r12
   inc rax
-  mov r15, rax
-  mov r12, r15
+  mov r13, rax
+  mov r12, r13
   jmp .for_cond_1
 .for_end_4:
   mov rax, rbx

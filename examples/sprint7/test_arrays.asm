@@ -15,7 +15,7 @@ global main
 main:
   push rbp
   mov rbp, rsp
-  sub rsp, 160
+  sub rsp, 80
   push rbx
   push r12
   push r13
@@ -51,21 +51,21 @@ main:
   mov rax, r15
   add rax, r13
   mov r14, rax
-  lea rax, [rbp-120]
+  lea rax, [rbp-64]
   mov rcx, 0
   shl rcx, 3
   add rax, rcx
   mov r12, rax
   mov rcx, 1
   mov [r12], rcx
-  lea rax, [rbp-120]
+  lea rax, [rbp-64]
   mov rcx, 1
   shl rcx, 3
   add rax, rcx
   mov r15, rax
   mov rcx, 2
   mov [r15], rcx
-  lea rax, [rbp-120]
+  lea rax, [rbp-64]
   mov rcx, 2
   shl rcx, 3
   add rax, rcx

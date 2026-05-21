@@ -15,18 +15,14 @@ global main
 main:
   push rbp
   mov rbp, rsp
-  sub rsp, 32
+  sub rsp, 16
   push rbx
   push r12
   push r13
-  push r14
 .func_main:
 .then_1:
 .end_if_2:
-  mov r12, rbx
-  mov r12, rbx
-  mov rax, r14
-  pop r14
+  mov rax, r13
   pop r13
   pop r12
   pop rbx
@@ -34,7 +30,6 @@ main:
   pop rbp
   ret
 .main_epilogue_fallback:
-  pop r14
   pop r13
   pop r12
   pop rbx
