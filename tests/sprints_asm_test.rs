@@ -17,6 +17,7 @@ fn test_sprints_asm_generation() {
         "examples/sprint7/sprint7_arrays.src",
         "examples/sprint7/test_arrays.src",
         "examples/sprint7/test_extern.src",
+        "examples/sprint6_7.src",
     ];
 
     for file in files {
