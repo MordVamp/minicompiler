@@ -1,0 +1,42 @@
+fn is_even(int n) -> bool {
+    return n % 2 == 0;
+}
+
+fn main() -> int {
+    printf("Starting combined Sprint 6 & 7 test...\n");
+    
+    // Array support (Sprint 7)
+    int numbers[10];
+    
+    // For loop (Sprint 6)
+    for (int i = 0; i < 10; i = i + 1) {
+        numbers[i] = i * 10;
+    }
+    
+    int sum = 0;
+    int index = 0;
+    
+    // While loop and If-Else (Sprint 6)
+    while (index < 10) {
+        int current = numbers[index];
+        
+        if (is_even(current / 10)) {
+            sum = sum + current;
+            printf("Added even index element: %d\n", current);
+        } else {
+            printf("Skipped odd index element: %d\n", current);
+        }
+        
+        index = index + 1;
+    }
+    
+    printf("Final sum of even index elements: %d\n", sum);
+    
+    // External memory management (Sprint 7)
+    int ptr = malloc(16);
+    printf("Allocated 16 bytes at address: %d\n", ptr);
+    free(ptr);
+    
+    printf("Test completed successfully!\n");
+    return sum;
+}

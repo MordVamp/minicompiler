@@ -193,6 +193,7 @@ impl IRGenerator {
                 let else_lbl = if else_branch.is_some() { self.new_label("else") } else { end_lbl.clone() };
 
                 self.emit(IRInstruction::JumpIfFalse { condition: cond_op, label: Operand::Label { name: else_lbl.clone() } });
+                self.emit(IRInstruction::Jump { label: Operand::Label { name: then_lbl.clone() } });
                 
                 self.switch_block(then_lbl.clone());
                 self.visit_statement(then_branch);
