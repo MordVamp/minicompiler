@@ -16,21 +16,29 @@ is_even:
   push rbp
   mov rbp, rsp
   sub rsp, 32
+  push rbx
+  push r12
   mov [rbp-8], rdi
 .func_is_even:
   mov rax, [rbp-8]
   cqo
   mov rcx, 2
   idiv rcx
-  mov [rbp-16], rdx
-  mov rax, [rbp-16]
+  mov rbx, rdx
+  mov rax, rbx
   cmp rax, 0
   sete al
   movzx rax, al
+  mov r12, rax
+  mov rax, r12
+  pop r12
+  pop rbx
   mov rsp, rbp
   pop rbp
   ret
 .is_even_epilogue_fallback:
+  pop r12
+  pop rbx
   mov rsp, rbp
   pop rbp
   ret
@@ -39,106 +47,119 @@ global main
 main:
   push rbp
   mov rbp, rsp
-  sub rsp, 432
+  sub rsp, 384
+  push rbx
+  push r12
+  push r13
+  push r14
+  push r15
 .func_main:
   mov rdi, str_1
   mov eax, 0
   call printf
   mov [rbp-8], rax
-  xor eax, eax
-  mov [rbp-96], rax
 .for_cond_2:
+  mov r13, r12
+  mov r15, r14
+  mov r12, r14
+  mov [rbp-88], rbx
+  mov rax, [rbp-120]
   cmp rax, 10
   setl al
   movzx rax, al
+  mov rbx, rax
+  mov rax, rbx
   cmp rax, 0
   jne .for_body_3
   jmp .for_end_5
 .for_body_3:
-  mov rax, [rbp-96]
+  mov rax, [rbp-120]
   imul rax, 10
-  mov [rbp-136], rax
+  mov rbx, rax
   lea rax, [rbp-88]
-  mov rcx, [rbp-96]
+  mov rcx, [rbp-120]
   shl rcx, 3
   add rax, rcx
-  mov rcx, [rbp-136]
-  mov [rax], rcx
+  mov r14, rax
+  mov [r14], rbx
 .for_update_4:
-  mov rax, [rbp-96]
+  mov rax, [rbp-120]
   inc rax
-  mov [rbp-96], rax
+  mov rbx, rax
+  mov [rbp-120], rbx
   jmp .for_cond_2
 .for_end_5:
-  xor eax, eax
-  mov [rbp-160], rax
-  xor eax, eax
-  mov [rbp-168], rax
 .while_cond_6:
+  mov rax, [rbp-200]
   cmp rax, 10
   setl al
   movzx rax, al
+  mov r14, rax
+  mov rax, r14
   cmp rax, 0
   jne .while_body_7
   jmp .while_end_8
 .while_body_7:
   lea rax, [rbp-88]
-  mov rcx, [rbp-168]
+  mov rcx, [rbp-200]
   shl rcx, 3
   add rax, rcx
-  mov rcx, [rax]
-  mov [rbp-224], rcx
-  mov rax, [rbp-224]
-  mov [rbp-232], rax
+  mov r13, rax
+  mov r15, [r13]
+  mov [rbp-232], r15
+  mov rax, [rbp-232]
   cqo
   mov rcx, 10
   idiv rcx
-  mov [rbp-240], rax
-  mov rdi, [rbp-240]
+  mov r12, rax
+  mov rdi, r12
   call is_even
   cmp rax, 0
   je .else_11
-.then_9:
-  mov rax, [rbp-160]
-  add rax, qword [rbp-232]
-  mov [rbp-160], rax
-  mov rdi, str_12
-  mov rsi, [rbp-232]
-  mov eax, 0
-  call printf
-  jmp .end_if_10
 .else_11:
   mov rdi, str_13
   mov rsi, [rbp-232]
   mov eax, 0
   call printf
 .end_if_10:
-  mov rax, [rbp-168]
+  mov r15, [rbp-200]
+  mov rax, r15
   inc rax
-  mov [rbp-168], rax
+  mov r12, rax
+  mov [rbp-200], r12
   jmp .while_cond_6
 .while_end_8:
   mov rdi, str_14
-  mov rsi, [rbp-160]
+  mov rsi, [rbp-192]
   mov eax, 0
   call printf
   mov rdi, 16
   call malloc
-  mov [rbp-376], rax
+  mov [rbp-320], rax
   mov rdi, str_15
-  mov rsi, [rbp-376]
+  mov rsi, [rbp-320]
   mov eax, 0
   call printf
-  mov rdi, [rbp-376]
+  mov rdi, [rbp-320]
   call free
   mov rdi, str_16
   mov eax, 0
   call printf
-  mov rax, [rbp-160]
+  mov rax, [rbp-192]
+  pop r15
+  pop r14
+  pop r13
+  pop r12
+  pop rbx
   mov rsp, rbp
   pop rbp
   ret
 .main_epilogue_fallback:
+  pop r15
+  pop r14
+  pop r13
+  pop r12
+  pop rbx
   mov rsp, rbp
   pop rbp
   ret

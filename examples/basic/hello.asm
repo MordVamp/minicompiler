@@ -16,16 +16,28 @@ main:
   push rbp
   mov rbp, rsp
   sub rsp, 32
+  push rbx
+  push r12
+  push r13
+  push r14
 .func_main:
 .then_1:
 .end_if_2:
-  mov rax, 3.14
-  mov rax, 42
-  mov rax, 10
+  mov r12, rbx
+  mov r12, rbx
+  mov rax, r14
+  pop r14
+  pop r13
+  pop r12
+  pop rbx
   mov rsp, rbp
   pop rbp
   ret
 .main_epilogue_fallback:
+  pop r14
+  pop r13
+  pop r12
+  pop rbx
   mov rsp, rbp
   pop rbp
   ret

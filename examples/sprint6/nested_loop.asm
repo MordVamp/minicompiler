@@ -15,47 +15,62 @@ global main
 main:
   push rbp
   mov rbp, rsp
-  sub rsp, 112
+  sub rsp, 64
+  push rbx
+  push r12
+  push r13
+  push r14
+  push r15
 .func_main:
-  xor eax, eax
-  mov [rbp-8], rax
-  xor eax, eax
-  mov [rbp-16], rax
 .for_cond_1:
+  mov r13, r12
+  mov rax, r13
   cmp rax, 5
   setl al
   movzx rax, al
+  mov r14, rax
+  mov rax, r14
   cmp rax, 0
   jne .for_body_2
   jmp .for_end_4
 .for_body_2:
-  mov rax, [rbp-16]
+  mov rax, r13
   cqo
   mov rcx, 2
   idiv rcx
-  mov [rbp-32], rdx
-  mov rax, [rbp-32]
+  mov r14, rdx
+  mov rax, r14
   cmp rax, 0
   sete al
   movzx rax, al
+  mov r15, rax
+  mov rax, r15
   cmp rax, 0
   je .end_if_6
-.then_5:
-  mov rax, [rbp-8]
-  add rax, qword [rbp-16]
-  mov [rbp-8], rax
 .end_if_6:
+  mov r12, r13
 .for_update_3:
-  mov rax, [rbp-16]
+  mov rax, r13
   inc rax
-  mov [rbp-16], rax
+  mov r15, rax
+  mov r12, r15
   jmp .for_cond_1
 .for_end_4:
-  mov rax, [rbp-8]
+  mov rax, rbx
+  pop r15
+  pop r14
+  pop r13
+  pop r12
+  pop rbx
   mov rsp, rbp
   pop rbp
   ret
 .main_epilogue_fallback:
+  pop r15
+  pop r14
+  pop r13
+  pop r12
+  pop rbx
   mov rsp, rbp
   pop rbp
   ret

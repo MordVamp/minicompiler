@@ -15,7 +15,12 @@ global main
 main:
   push rbp
   mov rbp, rsp
-  sub rsp, 352
+  sub rsp, 288
+  push rbx
+  push r12
+  push r13
+  push r14
+  push r15
 .func_main:
   mov rdi, str_1
   mov eax, 0
@@ -29,23 +34,16 @@ main:
   mov eax, 0
   call printf
 .for_cond_4:
-  xor eax, eax
-  mov [rbp-32], rax
-  mov rax, 100
-  mov [rbp-40], rax
-  mov rax, 900
-  mov [rbp-80], rax
-  mov rax, 30
-  mov rax, 100
-  mov [rbp-96], rax
-  mov rax, 50
-  mov [rbp-104], rax
-  mov rax, 50
-  mov [rbp-112], rax
+  mov r13, r12
+  mov r15, r14
+  mov r12, r14
+  mov [rbp-72], r14
   mov rax, [rbp-32]
   cmp rax, [rbp-96]
   setl al
   movzx rax, al
+  mov r14, rax
+  mov rax, r14
   cmp rax, 0
   jne .for_body_5
   jmp .for_end_7
@@ -53,49 +51,64 @@ main:
   jmp .for_cond_8
 .for_end_7:
 .for_cond_8:
-  xor eax, eax
-  mov [rbp-128], rax
+  mov [rbp-40], rbx
+  mov rbx, r14
+  mov rbx, r13
+  mov r14, r15
+  mov r13, r12
+  mov rbx, r15
+  mov r14, [rbp-72]
+  mov r12, [rbp-80]
+  mov r13, [rbp-88]
+  mov rbx, [rbp-96]
+  mov r15, [rbp-104]
+  mov r14, [rbp-112]
+  mov rax, [rbp-128]
   cmp rax, [rbp-40]
   setl al
   movzx rax, al
+  mov r13, rax
+  mov rax, r13
   cmp rax, 0
   jne .for_body_9
   jmp .for_end_11
 .for_body_9:
   mov rax, [rbp-128]
-  sub rax, qword [rbp-112]
-  mov [rbp-168], rax
+  sub rax, r14
+  mov rbx, rax
+  mov r13, rbx
   mov rax, [rbp-32]
-  sub rax, qword [rbp-104]
-  mov [rbp-184], rax
-  mov rax, [rbp-168]
-  imul rax, qword [rbp-168]
-  mov [rbp-192], rax
-  mov rax, [rbp-184]
-  imul rax, qword [rbp-184]
-  mov [rbp-200], rax
-  mov rax, [rbp-192]
-  add rax, qword [rbp-200]
-  cmp rax, [rbp-80]
+  sub rax, r15
+  mov r14, rax
+  mov rbx, r14
+  mov rax, r13
+  imul rax, r13
+  mov r15, rax
+  mov rax, rbx
+  imul rax, rbx
+  mov r14, rax
+  mov rax, r15
+  add rax, r14
+  mov r13, rax
+  mov rbx, r13
+  mov rax, rbx
+  cmp rax, r12
   setl al
   movzx rax, al
+  mov r15, rax
+  mov rax, r15
   cmp rax, 0
   je .else_14
-  jmp .then_12
 .else_14:
   mov rdi, str_16
-  mov eax, 0
-  call printf
-  jmp .end_if_13
-.then_12:
-  mov rdi, str_15
   mov eax, 0
   call printf
 .end_if_13:
 .for_update_10:
   mov rax, [rbp-128]
   inc rax
-  mov [rbp-128], rax
+  mov rbx, rax
+  mov [rbp-128], rbx
   jmp .for_cond_8
 .for_end_11:
   mov rdi, str_17
@@ -104,9 +117,15 @@ main:
 .for_update_6:
   mov rax, [rbp-32]
   inc rax
-  mov [rbp-32], rax
+  mov r15, rax
+  mov [rbp-32], r15
   jmp .for_cond_4
 .main_epilogue_fallback:
+  pop r15
+  pop r14
+  pop r13
+  pop r12
+  pop rbx
   mov rsp, rbp
   pop rbp
   ret

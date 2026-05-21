@@ -16,21 +16,29 @@ is_even:
   push rbp
   mov rbp, rsp
   sub rsp, 32
+  push rbx
+  push r12
   mov [rbp-8], rdi
 .func_is_even:
   mov rax, [rbp-8]
   cqo
   mov rcx, 2
   idiv rcx
-  mov [rbp-16], rdx
-  mov rax, [rbp-16]
+  mov r12, rdx
+  mov rax, r12
   cmp rax, 0
   sete al
   movzx rax, al
+  mov rbx, rax
+  mov rax, rbx
+  pop r12
+  pop rbx
   mov rsp, rbp
   pop rbp
   ret
 .is_even_epilogue_fallback:
+  pop r12
+  pop rbx
   mov rsp, rbp
   pop rbp
   ret
@@ -40,35 +48,65 @@ do_nothing:
   push rbp
   mov rbp, rsp
   sub rsp, 112
+  push rbx
+  push r12
+  push r13
+  push r14
+  push r15
 .func_do_nothing:
-  xor eax, eax
-  mov [rbp-8], rax
-  xor eax, eax
-  mov [rbp-16], rax
 .for_cond_1:
+  mov [rbp-8], rbx
+  mov [rbp-16], r12
+  mov [rbp-24], r13
+  mov rax, [rbp-40]
   cmp rax, 5
   setl al
   movzx rax, al
+  mov r14, rax
+  mov rax, r14
   cmp rax, 0
   jne .for_body_2
   jmp .for_end_4
 .for_body_2:
-  mov rdi, [rbp-16]
+  mov rdi, [rbp-40]
   call is_even
   cmp rax, 0
   je .end_if_6
-.then_5:
-  mov rax, [rbp-8]
-  add rax, qword [rbp-16]
-  mov [rbp-8], rax
-.end_if_6:
-.for_update_3:
-  mov rax, [rbp-16]
-  inc rax
-  mov [rbp-16], rax
-  jmp .for_cond_1
 .for_end_4:
+.then_5:
+  mov rax, [rbp-32]
+  add rax, qword [rbp-40]
+  mov r15, rax
+  mov rbx, r15
+.end_if_6:
+  mov r12, [rbp-8]
+  mov r12, [rbp-8]
+  mov r14, r13
+  mov r14, r15
+  mov r13, r12
+  mov r13, r14
+  mov r15, r12
+  mov r15, r12
+  mov r13, r14
+  mov r13, r14
+  mov r15, [rbp-16]
+  mov r15, [rbp-16]
+  mov r12, [rbp-24]
+  mov r12, [rbp-24]
+  mov r13, [rbp-32]
+  mov r13, rbx
+.for_update_3:
+  mov rax, [rbp-40]
+  inc rax
+  mov r14, rax
+  mov [rbp-40], r14
+  jmp .for_cond_1
 .do_nothing_epilogue_fallback:
+  pop r15
+  pop r14
+  pop r13
+  pop r12
+  pop rbx
   mov rsp, rbp
   pop rbp
   ret
@@ -77,11 +115,68 @@ global main
 main:
   push rbp
   mov rbp, rsp
-  sub rsp, 16
+  sub rsp, 128
+  push rbx
+  push r12
+  push r13
+  push r14
+  push r15
 .func_main:
   call do_nothing
   mov [rbp-8], rax
+.for_cond_1:
+  mov [rbp-16], rbx
+  mov [rbp-24], r12
+  mov [rbp-32], r13
+  mov rax, [rbp-48]
+  cmp rax, 5
+  setl al
+  movzx rax, al
+  mov r14, rax
+  mov rax, r14
+  cmp rax, 0
+  jne .for_body_2
+  jmp .for_end_4
+.for_body_2:
+  mov rdi, [rbp-48]
+  call is_even
+  cmp rax, 0
+  je .end_if_6
+.for_end_4:
+.then_5:
+  mov rax, [rbp-40]
+  add rax, qword [rbp-48]
+  mov r15, rax
+  mov rbx, r15
+.end_if_6:
+  mov r12, [rbp-16]
+  mov r12, [rbp-16]
+  mov r13, r15
+  mov r13, r14
+  mov r13, r12
+  mov r13, r14
+  mov r12, r15
+  mov r12, r15
+  mov r14, r13
+  mov r14, r13
+  mov r15, [rbp-24]
+  mov r15, [rbp-24]
+  mov r12, [rbp-32]
+  mov r12, [rbp-32]
+  mov r13, [rbp-40]
+  mov r13, rbx
+.for_update_3:
+  mov rax, [rbp-48]
+  inc rax
+  mov r14, rax
+  mov [rbp-48], r14
+  jmp .for_cond_1
 .main_epilogue_fallback:
+  pop r15
+  pop r14
+  pop r13
+  pop r12
+  pop rbx
   mov rsp, rbp
   pop rbp
   ret

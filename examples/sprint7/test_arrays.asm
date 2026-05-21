@@ -16,52 +16,68 @@ main:
   push rbp
   mov rbp, rsp
   sub rsp, 160
+  push rbx
+  push r12
+  push r13
+  push r14
+  push r15
 .func_main:
   lea rax, [rbp-40]
   mov rcx, 0
   shl rcx, 3
   add rax, rcx
+  mov r12, rax
   mov rcx, 10
-  mov [rax], rcx
+  mov [r12], rcx
   lea rax, [rbp-40]
   mov rcx, 1
   shl rcx, 3
   add rax, rcx
+  mov r13, rax
   mov rcx, 20
-  mov [rax], rcx
+  mov [r13], rcx
   lea rax, [rbp-40]
   mov rcx, 0
   shl rcx, 3
   add rax, rcx
-  mov rcx, [rax]
-  mov [rbp-72], rcx
+  mov r14, rax
+  mov r15, [r14]
   lea rax, [rbp-40]
   mov rcx, 1
   shl rcx, 3
   add rax, rcx
-  mov rcx, [rax]
-  mov [rbp-88], rcx
-  mov rax, [rbp-72]
-  add rax, qword [rbp-88]
-  lea rax, [rbp-128]
+  mov r12, rax
+  mov r13, [r12]
+  mov rax, r15
+  add rax, r13
+  mov r14, rax
+  lea rax, [rbp-120]
   mov rcx, 0
   shl rcx, 3
   add rax, rcx
+  mov r12, rax
   mov rcx, 1
-  mov [rax], rcx
-  lea rax, [rbp-128]
+  mov [r12], rcx
+  lea rax, [rbp-120]
   mov rcx, 1
   shl rcx, 3
   add rax, rcx
+  mov r15, rax
   mov rcx, 2
-  mov [rax], rcx
-  lea rax, [rbp-128]
+  mov [r15], rcx
+  lea rax, [rbp-120]
   mov rcx, 2
   shl rcx, 3
   add rax, rcx
+  mov r13, rax
   mov rcx, 3
-  mov [rax], rcx
+  mov [r13], rcx
 .main_epilogue_fallback:
+  pop r15
+  pop r14
+  pop r13
+  pop r12
+  pop rbx
   mov rsp, rbp
   pop rbp
   ret

@@ -16,56 +16,102 @@ main:
   push rbp
   mov rbp, rsp
   sub rsp, 160
+  push rbx
+  push r12
+  push r13
+  push r14
+  push r15
 .func_main:
 .while_cond_1:
-  mov rax, 200
-  mov [rbp-8], rax
-  xor eax, eax
-  mov [rbp-24], rax
-  xor eax, eax
-  mov [rbp-32], rax
-  xor eax, eax
-  mov [rbp-40], rax
-  mov rax, 2
-  mov rax, 100
+  mov r13, r12
+  mov r14, r15
   mov rax, [rbp-40]
   cmp rax, [rbp-32]
   setl al
   movzx rax, al
+  mov r12, rax
+  mov rax, r12
   cmp rax, 0
   jne .while_body_2
   jmp .while_end_3
 .while_body_2:
-  mov rax, [rbp-24]
-  add rax, qword [rbp-8]
-  mov [rbp-24], rax
+  mov rax, r14
+  add rax, rbx
+  mov r12, rax
+  mov r15, r12
   mov rax, [rbp-40]
   inc rax
-  mov [rbp-40], rax
+  mov r12, rax
+  mov [rbp-40], r12
   jmp .while_cond_1
 .while_end_3:
-  mov rax, [rbp-8]
-  add rax, qword [rbp-24]
-  mov [rbp-96], rax
+  mov rax, rbx
+  add rax, r14
+  mov r12, rax
+  mov [rbp-96], r12
+  mov rax, [rbp-96]
   cmp rax, 200
   sete al
   movzx rax, al
+  mov r12, rax
+  mov rax, r12
   cmp rax, 0
   je .else_6
 .then_4:
   mov rax, [rbp-96]
+  pop r15
+  pop r14
+  pop r13
+  pop r12
+  pop rbx
   mov rsp, rbp
   pop rbp
   ret
 .end_if_5:
+  mov r12, rbx
+  mov r12, rbx
+  mov rbx, r12
+  mov rbx, r12
+  mov rbx, r12
+  mov rbx, r12
+  mov rbx, r12
+  mov rbx, r12
+  mov r12, rbx
+  mov r12, rbx
+  mov rbx, r12
+  mov rbx, r12
+  mov rbx, r13
+  mov rbx, r13
+  mov r15, r14
+  mov r15, r14
+  mov r12, [rbp-96]
+  mov r12, [rbp-96]
+  mov r13, [rbp-32]
+  mov r13, [rbp-32]
+  mov r14, [rbp-48]
+  mov r14, [rbp-48]
+  mov r15, [rbp-56]
+  mov r15, [rbp-56]
 .else_6:
   mov rax, 1
   neg rax
+  mov rbx, rax
+  mov rax, rbx
+  pop r15
+  pop r14
+  pop r13
+  pop r12
+  pop rbx
   mov rsp, rbp
   pop rbp
   ret
   jmp .end_if_5
 .main_epilogue_fallback:
+  pop r15
+  pop r14
+  pop r13
+  pop r12
+  pop rbx
   mov rsp, rbp
   pop rbp
   ret
