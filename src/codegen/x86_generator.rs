@@ -347,15 +347,29 @@ impl X86Generator {
                 let load = self.load_operand("rax", left);
                 let store = self.store_operand(result, "rax");
                 code.push_str(&load);
-                code.push_str("  cqo\n");
-                match right {
-                    Operand::Literal { value } => {
-                        code.push_str(&format!("  mov rcx, {}\n", value));
-                        code.push_str("  idiv rcx\n");
+                
+                let mut optimized = false;
+                if let Operand::Literal { value } = right {
+                    if let Ok(v) = value.parse::<i64>() {
+                        if v > 0 && (v & (v - 1)) == 0 {
+                            let shift = v.trailing_zeros();
+                            code.push_str(&format!("  sar rax, {}\n", shift));
+                            optimized = true;
+                        }
                     }
-                    _ => {
-                        let right_str = self.operand_to_str(right);
-                        code.push_str(&format!("  idiv {}\n", right_str));
+                }
+                
+                if !optimized {
+                    code.push_str("  cqo\n");
+                    match right {
+                        Operand::Literal { value } => {
+                            code.push_str(&format!("  mov rcx, {}\n", value));
+                            code.push_str("  idiv rcx\n");
+                        }
+                        _ => {
+                            let right_str = self.operand_to_str(right);
+                            code.push_str(&format!("  idiv {}\n", right_str));
+                        }
                     }
                 }
                 code.push_str(&store);
@@ -363,19 +377,35 @@ impl X86Generator {
             IRInstruction::Mod { result, left, right } => {
                 let load = self.load_operand("rax", left);
                 let store = self.store_operand(result, "rdx");
-                code.push_str(&load);
-                code.push_str("  cqo\n");
-                match right {
-                    Operand::Literal { value } => {
-                        code.push_str(&format!("  mov rcx, {}\n", value));
-                        code.push_str("  idiv rcx\n");
-                    }
-                    _ => {
-                        let right_str = self.operand_to_str(right);
-                        code.push_str(&format!("  idiv {}\n", right_str));
+                
+                let mut optimized = false;
+                if let Operand::Literal { value } = right {
+                    if let Ok(v) = value.parse::<i64>() {
+                        if v > 0 && (v & (v - 1)) == 0 {
+                            code.push_str(&load);
+                            code.push_str(&format!("  and rax, {}\n", v - 1));
+                            let store_opt = self.store_operand(result, "rax");
+                            code.push_str(&store_opt);
+                            optimized = true;
+                        }
                     }
                 }
-                code.push_str(&store);
+
+                if !optimized {
+                    code.push_str(&load);
+                    code.push_str("  cqo\n");
+                    match right {
+                        Operand::Literal { value } => {
+                            code.push_str(&format!("  mov rcx, {}\n", value));
+                            code.push_str("  idiv rcx\n");
+                        }
+                        _ => {
+                            let right_str = self.operand_to_str(right);
+                            code.push_str(&format!("  idiv {}\n", right_str));
+                        }
+                    }
+                    code.push_str(&store);
+                }
             }
             IRInstruction::And { result, left, right } => {
                 let right_str = self.operand_to_str(right);

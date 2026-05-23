@@ -16,8 +16,10 @@ impl IROptimizer {
         while changed {
             changed = false;
             if self.constant_propagation() { changed = true; }
+            if self.copy_propagation() { changed = true; }
             if self.constant_folding() { changed = true; }
             if self.algebraic_simplification() { changed = true; }
+            if self.common_subexpression_elimination() { changed = true; }
             if self.loop_invariant_code_motion() { changed = true; }
             if self.control_flow_optimization() { changed = true; }
         }
@@ -61,6 +63,73 @@ impl IROptimizer {
             for inst in &mut block.instructions {
                 if Self::replace_operands_static(inst, &constants) {
                     changed = true;
+                }
+            }
+        }
+        changed
+    }
+
+    fn copy_propagation(&mut self) -> bool {
+        let mut changed = false;
+        let mut copies: HashMap<Operand, Operand> = HashMap::new();
+
+        for block in self.blocks.values() {
+            for inst in &block.instructions {
+                if let IRInstruction::Move { result, source } = inst {
+                    if matches!(source, Operand::Var { .. } | Operand::Temp { .. }) {
+                        copies.insert(result.clone(), source.clone());
+                    }
+                }
+            }
+        }
+
+        for block in self.blocks.values_mut() {
+            for inst in &mut block.instructions {
+                if Self::replace_operands_static(inst, &copies) {
+                    changed = true;
+                }
+            }
+        }
+        changed
+    }
+
+    fn common_subexpression_elimination(&mut self) -> bool {
+        let mut changed = false;
+        let mut expressions: HashMap<String, Operand> = HashMap::new();
+
+        for block in self.blocks.values_mut() {
+            for inst in &mut block.instructions {
+                let (op_str, res, should_replace, existing) = match inst {
+                    IRInstruction::Add { result, left, right } => {
+                        let op = format!("ADD {:?} {:?}", left, right);
+                        let existing = expressions.get(&op).cloned();
+                        (Some(op), Some(result.clone()), existing.is_some(), existing)
+                    }
+                    IRInstruction::Sub { result, left, right } => {
+                        let op = format!("SUB {:?} {:?}", left, right);
+                        let existing = expressions.get(&op).cloned();
+                        (Some(op), Some(result.clone()), existing.is_some(), existing)
+                    }
+                    IRInstruction::Mul { result, left, right } => {
+                        let op = format!("MUL {:?} {:?}", left, right);
+                        let existing = expressions.get(&op).cloned();
+                        (Some(op), Some(result.clone()), existing.is_some(), existing)
+                    }
+                    IRInstruction::Div { result, left, right } => {
+                        let op = format!("DIV {:?} {:?}", left, right);
+                        let existing = expressions.get(&op).cloned();
+                        (Some(op), Some(result.clone()), existing.is_some(), existing)
+                    }
+                    _ => (None, None, false, None)
+                };
+
+                if let (Some(op), Some(res)) = (op_str, res) {
+                    if should_replace {
+                        *inst = IRInstruction::Move { result: res, source: existing.unwrap() };
+                        changed = true;
+                    } else {
+                        expressions.insert(op, res);
+                    }
                 }
             }
         }
