@@ -87,9 +87,10 @@ impl RegisterAllocator {
             // Uses: extend end
             for used in Self::uses(inst) {
                 let key = Self::key(&used);
+                let start_idx = if matches!(used, Operand::Var { version: 0, .. }) { 0 } else { idx };
                 let iv = map.entry(key.clone()).or_insert(LiveInterval {
                     operand: used.clone(),
-                    start: idx,
+                    start: start_idx,
                     end: idx,
                     crosses_call: false,
                 });

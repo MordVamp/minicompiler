@@ -112,10 +112,17 @@ impl X86Generator {
         }
 
         for (i, p_name) in func.parameters.iter().enumerate() {
+            let op = Operand::Var { name: p_name.clone(), version: 0 };
             if i < 6 {
                 let reg = abi::INTEGER_ARG_REGISTERS[i];
-                let op = Operand::Var { name: p_name.clone(), version: 0 };
                 let inst_str = self.store_operand(&op, reg);
+                self.output.push_str(&inst_str);
+            } else {
+                // Argument >= 6 is on the stack at [rbp + 16 + (i - 6) * 8]
+                // We load it into rax and store it into the local operand (either reg or local stack slot)
+                let offset = 16 + (i - 6) * 8;
+                self.output.push_str(&format!("  mov rax, [rbp+{}]\n", offset));
+                let inst_str = self.store_operand(&op, "rax");
                 self.output.push_str(&inst_str);
             }
         }
@@ -437,18 +444,36 @@ impl X86Generator {
             IRInstruction::Param { value } => { self.params.push(value.clone()); }
             IRInstruction::Call { result, callee, num_args } => {
                 let start_idx = self.params.len().saturating_sub(*num_args);
-                for i in 0..*num_args {
-                    let arg = self.params[start_idx + i].clone();
-                    if i < 6 {
-                        let reg = abi::INTEGER_ARG_REGISTERS[i];
-                        let load = self.load_operand(reg, &arg);
+                
+                // For System V AMD64 ABI, arguments 7+ are pushed to the stack in reverse order
+                if *num_args > 6 {
+                    for i in (6..*num_args).rev() {
+                        let arg = self.params[start_idx + i].clone();
+                        let load = self.load_operand("rax", &arg);
                         code.push_str(&load);
+                        code.push_str("  push rax\n");
                     }
                 }
+                
+                // First 6 arguments are loaded into registers
+                for i in 0..std::cmp::min(6, *num_args) {
+                    let arg = self.params[start_idx + i].clone();
+                    let reg = abi::INTEGER_ARG_REGISTERS[i];
+                    let load = self.load_operand(reg, &arg);
+                    code.push_str(&load);
+                }
+                
                 if callee == "printf" || callee == "scanf" {
                     code.push_str("  mov eax, 0\n");
                 }
                 code.push_str(&format!("  call {}\n", callee));
+                
+                // Clean up the stack if we pushed arguments
+                if *num_args > 6 {
+                    let stack_cleanup = (*num_args - 6) * 8;
+                    code.push_str(&format!("  add rsp, {}\n", stack_cleanup));
+                }
+
                 if let Some(r) = result {
                     let store = self.store_operand(r, "rax");
                     code.push_str(&store);
