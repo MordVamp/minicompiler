@@ -238,17 +238,29 @@ impl IRGenerator {
                 self.visit_declaration(decl);
             }
             StatementNode::WhileStmt { condition, body, .. } => {
+                // Loop Peeling: Unroll the very first iteration of the loop!
+                let peel_body = self.new_label("while_peel");
                 let start_label = self.new_label("while_cond");
                 let body_label = self.new_label("while_body");
                 let end_label = self.new_label("while_end");
 
+                // Evaluate condition for the peeled iteration
+                let cond_op_peel = self.visit_expression(condition);
+                self.emit(IRInstruction::JumpIfTrue { condition: cond_op_peel, label: Operand::Label { name: peel_body.clone() } });
+                self.emit(IRInstruction::Jump { label: Operand::Label { name: end_label.clone() } });
+
+                // The peeled iteration body
+                self.switch_block(peel_body);
+                self.visit_statement(body);
                 self.emit(IRInstruction::Jump { label: Operand::Label { name: start_label.clone() } });
                 
+                // Normal loop condition
                 self.switch_block(start_label.clone());
                 let cond_op = self.visit_expression(condition);
                 self.emit(IRInstruction::JumpIfTrue { condition: cond_op, label: Operand::Label { name: body_label.clone() } });
                 self.emit(IRInstruction::Jump { label: Operand::Label { name: end_label.clone() } });
 
+                // Normal loop body
                 self.switch_block(body_label);
                 self.visit_statement(body);
                 self.emit(IRInstruction::Jump { label: Operand::Label { name: start_label } });
