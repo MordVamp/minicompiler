@@ -402,7 +402,7 @@ fn run_compile(input_path: &PathBuf, output_path: Option<&PathBuf>, verbose: boo
     
     let mut blocks = ssa_builder.blocks;
     if optimize {
-        let mut ir_optimizer = minicompiler::ir::optimizer::IROptimizer::new(blocks);
+        let mut ir_optimizer = minicompiler::ir::optimizer::IROptimizer::new(blocks, ir_gen.functions.clone());
         ir_optimizer.optimize();
         blocks = ir_optimizer.blocks;
         

@@ -44,7 +44,7 @@ fn test_sprints_asm_generation() {
         let mut ssa_builder = SSAConstructor::new(ir_gen.blocks);
         ssa_builder.construct();
         
-        let mut ir_optimizer = IROptimizer::new(ssa_builder.blocks);
+        let mut ir_optimizer = IROptimizer::new(ssa_builder.blocks, ir_gen.functions.clone());
         ir_optimizer.optimize();
         let blocks = ir_optimizer.blocks;
         

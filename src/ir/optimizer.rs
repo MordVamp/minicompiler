@@ -2,13 +2,17 @@ use crate::ir::ir_instructions::{IRInstruction, Operand};
 use crate::ir::basic_block::BasicBlock;
 use std::collections::{HashMap, HashSet};
 
+use crate::ir::ir_generator::FunctionMetadata;
+
 pub struct IROptimizer {
     pub blocks: HashMap<String, BasicBlock>,
+    pub functions: Vec<FunctionMetadata>,
+    pub inline_counter: usize,
 }
 
 impl IROptimizer {
-    pub fn new(blocks: HashMap<String, BasicBlock>) -> Self {
-        Self { blocks }
+    pub fn new(blocks: HashMap<String, BasicBlock>, functions: Vec<FunctionMetadata>) -> Self {
+        Self { blocks, functions, inline_counter: 0 }
     }
 
     pub fn optimize(&mut self) {
@@ -16,6 +20,7 @@ impl IROptimizer {
         while changed {
             changed = false;
             if self.constant_propagation() { changed = true; }
+            if self.function_inlining() { changed = true; }
             if self.copy_propagation() { changed = true; }
             if self.constant_folding() { changed = true; }
             if self.algebraic_simplification() { changed = true; }
@@ -47,6 +52,115 @@ impl IROptimizer {
             }
         });
         keys
+    }
+
+    fn function_inlining(&mut self) -> bool {
+        let mut changed = false;
+        
+        let mut inlineable: HashMap<String, Vec<IRInstruction>> = HashMap::new();
+        for func in &self.functions {
+            let func_label = format!("func_{}", func.name);
+            if let Some(block) = self.blocks.get(&func_label) {
+                if block.successors.is_empty() { // Single block
+                    inlineable.insert(func.name.clone(), block.instructions.clone());
+                }
+            }
+        }
+
+        let block_names: Vec<String> = self.blocks.keys().cloned().collect();
+        for name in block_names {
+            let mut block = self.blocks.remove(&name).unwrap();
+            let mut new_insts = Vec::new();
+            
+            for inst in block.instructions {
+                if let IRInstruction::Call { result, callee, num_args } = &inst {
+                    if let Some(callee_insts) = inlineable.get(callee) {
+                        let mut param_ops = Vec::new();
+                        let mut params_found = 0;
+                        for j in (0..new_insts.len()).rev() {
+                            if let IRInstruction::Param { value } = &new_insts[j] {
+                                param_ops.push(value.clone());
+                                params_found += 1;
+                                if params_found == *num_args { break; }
+                            }
+                        }
+                        
+                        if params_found == *num_args {
+                            param_ops.reverse();
+                            let mut keep_insts = Vec::new();
+                            let mut skip = *num_args;
+                            for j in (0..new_insts.len()).rev() {
+                                if skip > 0 && matches!(new_insts[j], IRInstruction::Param { .. }) {
+                                    skip -= 1;
+                                } else {
+                                    keep_insts.push(new_insts[j].clone());
+                                }
+                            }
+                            keep_insts.reverse();
+                            new_insts = keep_insts;
+
+                            let param_names = self.functions.iter().find(|f| &f.name == callee).unwrap().parameters.clone();
+                            let mut replace_map = HashMap::new();
+                            for (p_idx, p_name) in param_names.iter().enumerate() {
+                                if p_idx < param_ops.len() {
+                                    replace_map.insert(Operand::Var { name: p_name.clone(), version: 0 }, param_ops[p_idx].clone());
+                                }
+                            }
+
+                            self.inline_counter += 1;
+                            for c_inst in callee_insts {
+                                let mut cloned = c_inst.clone();
+                                
+                                let mut map_op = |op: &mut Operand| {
+                                    if let Some(repl) = replace_map.get(op) {
+                                        *op = repl.clone();
+                                    } else {
+                                        match op {
+                                            Operand::Var { name, .. } => { *name = format!("inln{}_{}", self.inline_counter, name); }
+                                            Operand::Temp { id, .. } => { *id += self.inline_counter * 10000; }
+                                            _ => {}
+                                        }
+                                    }
+                                };
+
+                                match &mut cloned {
+                                    IRInstruction::Add { result, left, right } | IRInstruction::Sub { result, left, right } |
+                                    IRInstruction::Mul { result, left, right } | IRInstruction::Div { result, left, right } |
+                                    IRInstruction::Mod { result, left, right } |
+                                    IRInstruction::And { result, left, right } | IRInstruction::Or { result, left, right } |
+                                    IRInstruction::Xor { result, left, right } |
+                                    IRInstruction::Equal { result, left, right } | IRInstruction::NotEqual { result, left, right } |
+                                    IRInstruction::Less { result, left, right } | IRInstruction::LessEqual { result, left, right } |
+                                    IRInstruction::Greater { result, left, right } | IRInstruction::GreaterEqual { result, left, right } => {
+                                        map_op(result); map_op(left); map_op(right);
+                                    }
+                                    IRInstruction::Move { result, source } | IRInstruction::Not { result, operand: source } |
+                                    IRInstruction::Neg { result, operand: source } | IRInstruction::Store { address: result, source } |
+                                    IRInstruction::Load { result, address: source } | IRInstruction::GetElementPtr { result, base: source, .. } => {
+                                        map_op(result); map_op(source);
+                                    }
+                                    IRInstruction::Return { value } => {
+                                        if let (Some(r), Some(v)) = (result, value) {
+                                            map_op(v);
+                                            new_insts.push(IRInstruction::Move { result: r.clone(), source: v.clone() });
+                                        }
+                                        continue; 
+                                    }
+                                    _ => {}
+                                }
+                                new_insts.push(cloned);
+                            }
+                            changed = true;
+                            continue;
+                        }
+                    }
+                }
+                new_insts.push(inst);
+            }
+            block.instructions = new_insts;
+            self.blocks.insert(name, block);
+        }
+        changed
     }
 
     fn constant_propagation(&mut self) -> bool {
