@@ -22,6 +22,8 @@ impl IROptimizer {
             if self.common_subexpression_elimination() { changed = true; }
             if self.loop_invariant_code_motion() { changed = true; }
             if self.control_flow_optimization() { changed = true; }
+            if self.block_merging() { changed = true; }
+            if self.local_dead_store_elimination() { changed = true; }
         }
         // DCE runs only once at the end as a cleanup pass.
         // It must NOT run iteratively because the x86 backend still reads stack slots
@@ -436,6 +438,96 @@ impl IROptimizer {
             changed = true;
         }
 
+        changed
+    }
+
+    fn block_merging(&mut self) -> bool {
+        let mut preds: HashMap<String, Vec<String>> = HashMap::new();
+        for (name, block) in &self.blocks {
+            for succ in &block.successors {
+                preds.entry(succ.clone()).or_default().push(name.clone());
+            }
+        }
+        let keys: Vec<String> = self.blocks.keys().cloned().collect();
+        for name in keys {
+            let merge_target = if let Some(block) = self.blocks.get(&name) {
+                if block.successors.len() == 1 {
+                    let succ_name = &block.successors[0];
+                    if let Some(succ_preds) = preds.get(succ_name) {
+                        if succ_preds.len() == 1 && succ_preds[0] == name && succ_name != &name && !succ_name.starts_with("func_") {
+                            Some(succ_name.clone())
+                        } else { None }
+                    } else { None }
+                } else { None }
+            } else { None };
+
+            if let Some(succ_name) = merge_target {
+                let mut succ_insts = self.blocks.get(&succ_name).unwrap().instructions.clone();
+                let succ_succs = self.blocks.get(&succ_name).unwrap().successors.clone();
+                
+                let block_mut = self.blocks.get_mut(&name).unwrap();
+                if let Some(IRInstruction::Jump { .. }) = block_mut.instructions.last() {
+                    block_mut.instructions.pop();
+                }
+                block_mut.instructions.append(&mut succ_insts);
+                block_mut.successors = succ_succs;
+                
+                self.blocks.remove(&succ_name);
+                return true; // Restart optimization loop
+            }
+        }
+        false
+    }
+
+    fn local_dead_store_elimination(&mut self) -> bool {
+        let mut changed = false;
+        for block in self.blocks.values_mut() {
+            let mut stores: HashMap<String, usize> = HashMap::new();
+            let mut to_remove = HashSet::new();
+            
+            for (i, inst) in block.instructions.iter().enumerate() {
+                match inst {
+                    IRInstruction::Store { address: Operand::Var { name, version }, .. } => {
+                        let key = format!("v_{}_{}", name, version);
+                        if let Some(prev_idx) = stores.get(&key) {
+                            to_remove.insert(*prev_idx);
+                            changed = true;
+                        }
+                        stores.insert(key, i);
+                    }
+                    IRInstruction::Store { address: Operand::Temp { id, version }, .. } => {
+                        let key = format!("t_{}_{}", id, version);
+                        if let Some(prev_idx) = stores.get(&key) {
+                            to_remove.insert(*prev_idx);
+                            changed = true;
+                        }
+                        stores.insert(key, i);
+                    }
+                    IRInstruction::Load { address: Operand::Var { name, version }, .. } => {
+                        let key = format!("v_{}_{}", name, version);
+                        stores.remove(&key);
+                    }
+                    IRInstruction::Load { address: Operand::Temp { id, version }, .. } => {
+                        let key = format!("t_{}_{}", id, version);
+                        stores.remove(&key);
+                    }
+                    IRInstruction::Call { .. } => {
+                        stores.clear();
+                    }
+                    _ => {}
+                }
+            }
+            
+            if !to_remove.is_empty() {
+                let mut new_insts = Vec::new();
+                for (i, inst) in block.instructions.drain(..).enumerate() {
+                    if !to_remove.contains(&i) {
+                        new_insts.push(inst);
+                    }
+                }
+                block.instructions = new_insts;
+            }
+        }
         changed
     }
 
