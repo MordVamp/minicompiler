@@ -29,6 +29,7 @@ impl IROptimizer {
             if self.control_flow_optimization() { changed = true; }
             if self.block_merging() { changed = true; }
             if self.local_dead_store_elimination() { changed = true; }
+            if self.global_dead_store_elimination() { changed = true; }
         }
         // DCE runs only once at the end as a cleanup pass.
         // It must NOT run iteratively because the x86 backend still reads stack slots
@@ -642,6 +643,85 @@ impl IROptimizer {
                 block.instructions = new_insts;
             }
         }
+        changed
+    }
+
+    fn global_dead_store_elimination(&mut self) -> bool {
+        let mut changed = false;
+        
+        let mut preds: HashMap<String, Vec<String>> = HashMap::new();
+        for (name, block) in &self.blocks {
+            for succ in &block.successors {
+                preds.entry(succ.clone()).or_default().push(name.clone());
+            }
+        }
+        
+        let mut blocks_reading_memory = HashSet::new();
+        for (name, block) in &self.blocks {
+            for inst in &block.instructions {
+                if matches!(inst, IRInstruction::Load { .. } | IRInstruction::Call { .. }) {
+                    blocks_reading_memory.insert(name.clone());
+                    break;
+                }
+            }
+        }
+        
+        let mut reachability = blocks_reading_memory.clone();
+        let mut worklist: Vec<String> = reachability.iter().cloned().collect();
+        while let Some(node) = worklist.pop() {
+            if let Some(p) = preds.get(&node) {
+                for pred in p {
+                    if reachability.insert(pred.clone()) {
+                        worklist.push(pred.clone());
+                    }
+                }
+            }
+        }
+        
+        for (name, block) in self.blocks.iter_mut() {
+            let mut any_succ_reaches = false;
+            for succ in &block.successors {
+                if reachability.contains(succ) {
+                    any_succ_reaches = true;
+                    break;
+                }
+            }
+            
+            if !any_succ_reaches && !blocks_reading_memory.contains(name) {
+                let old_len = block.instructions.len();
+                block.instructions.retain(|inst| !matches!(inst, IRInstruction::Store { .. }));
+                if block.instructions.len() != old_len {
+                    changed = true;
+                }
+            } else if !any_succ_reaches && blocks_reading_memory.contains(name) {
+                let mut last_read_idx = None;
+                for (i, inst) in block.instructions.iter().enumerate() {
+                    if matches!(inst, IRInstruction::Load { .. } | IRInstruction::Call { .. }) {
+                        last_read_idx = Some(i);
+                    }
+                }
+                
+                if let Some(idx) = last_read_idx {
+                    let mut to_remove = HashSet::new();
+                    for (i, inst) in block.instructions.iter().enumerate() {
+                        if i > idx && matches!(inst, IRInstruction::Store { .. }) {
+                            to_remove.insert(i);
+                        }
+                    }
+                    if !to_remove.is_empty() {
+                        let mut new_insts = Vec::new();
+                        for (i, inst) in block.instructions.drain(..).enumerate() {
+                            if !to_remove.contains(&i) {
+                                new_insts.push(inst);
+                            }
+                        }
+                        block.instructions = new_insts;
+                        changed = true;
+                    }
+                }
+            }
+        }
+        
         changed
     }
 
