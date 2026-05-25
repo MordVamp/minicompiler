@@ -57,32 +57,35 @@ main:
   mov r12, rax
   mov rcx, 50
   mov [r12], rcx
+  xor eax, eax
+  mov [rbp-48], rax
+  mov r13, 0
 .for_cond_1:
-  mov rax, r14
+  mov rax, r13
   cmp rax, 5
   setl al
   movzx rax, al
-  mov r15, rax
-  mov rax, r15
+  mov r12, rax
+  mov rax, r12
   cmp rax, 0
   jne .for_body_2
   jmp .for_end_4
 .for_body_2:
   lea rax, [rbp-40]
-  mov rcx, r14
+  mov rcx, r13
   shl rcx, 3
   add rax, rcx
-  mov r12, rax
-  mov r13, [r12]
+  mov r14, rax
+  mov r15, [r14]
   mov rax, [rbp-48]
-  add rax, r13
-  mov r15, rax
-  mov [rbp-48], r15
+  add rax, r15
+  mov r12, rax
+  mov [rbp-48], r12
 .for_update_3:
-  mov rax, r14
+  mov rax, r13
   inc rax
   mov rbx, rax
-  mov r14, rbx
+  mov r13, rbx
   jmp .for_cond_1
 .for_end_4:
   mov rdi, str_5

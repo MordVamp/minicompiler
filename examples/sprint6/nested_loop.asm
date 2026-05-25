@@ -22,6 +22,8 @@ main:
   push r14
   push r15
 .func_main:
+  mov rbx, 0
+  mov r12, 0
 .for_cond_1:
   mov rax, r12
   cmp rax, 5
@@ -34,10 +36,8 @@ main:
   jmp .for_end_4
 .for_body_2:
   mov rax, r12
-  cqo
-  mov rcx, 2
-  idiv rcx
-  mov r15, rdx
+  and rax, 1
+  mov r15, rax
   mov rax, r15
   cmp rax, 0
   sete al

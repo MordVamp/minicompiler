@@ -21,10 +21,8 @@ is_even:
   mov [rbp-8], rdi
 .func_is_even:
   mov rax, [rbp-8]
-  cqo
-  mov rcx, 2
-  idiv rcx
-  mov r12, rdx
+  and rax, 1
+  mov r12, rax
   mov rax, r12
   cmp rax, 0
   sete al
@@ -47,7 +45,7 @@ global main
 main:
   push rbp
   mov rbp, rsp
-  sub rsp, 256
+  sub rsp, 416
   push rbx
   push r12
   push r13
@@ -58,8 +56,9 @@ main:
   mov eax, 0
   call printf
   mov [rbp-8], rax
+  xor eax, eax
+  mov [rbp-96], rax
 .for_cond_2:
-  mov rax, [rbp-120]
   cmp rax, 10
   setl al
   movzx rax, al
@@ -69,41 +68,43 @@ main:
   jne .for_body_3
   jmp .for_end_5
 .for_body_3:
-  mov rax, [rbp-120]
+  mov rax, [rbp-96]
   imul rax, 10
   mov r12, rax
   lea rax, [rbp-88]
-  mov rcx, [rbp-120]
+  mov rcx, [rbp-96]
   shl rcx, 3
   add rax, rcx
   mov r13, rax
   mov [r13], r12
 .for_update_4:
-  mov rax, [rbp-120]
+  mov rax, [rbp-96]
   inc rax
   mov r14, rax
-  mov [rbp-120], r14
+  mov [rbp-96], r14
   jmp .for_cond_2
 .for_end_5:
-.while_cond_6:
-  mov rax, [rbp-168]
+  xor eax, eax
+  mov [rbp-128], rax
+  xor eax, eax
+  mov [rbp-136], rax
   cmp rax, 10
   setl al
   movzx rax, al
   mov r15, rax
   mov rax, r15
   cmp rax, 0
-  jne .while_body_7
-  jmp .while_end_8
-.while_body_7:
+  jne .while_peel_6
+  jmp .while_end_9
+.while_peel_6:
   lea rax, [rbp-88]
-  mov rcx, [rbp-168]
+  mov rcx, [rbp-136]
   shl rcx, 3
   add rax, rcx
   mov rbx, rax
   mov r12, [rbx]
-  mov [rbp-176], r12
-  mov rax, [rbp-176]
+  mov [rbp-144], r12
+  mov rax, [rbp-144]
   cqo
   mov rcx, 10
   idiv rcx
@@ -111,46 +112,93 @@ main:
   mov rdi, r13
   call is_even
   cmp rax, 0
-  je .else_11
-.else_11:
-  mov rdi, str_13
-  mov rsi, [rbp-176]
-  mov eax, 0
-  call printf
-  jmp .end_if_10
-.then_9:
-  mov rax, [rbp-160]
-  add rax, qword [rbp-176]
+  je .else_12
+.then_10:
+  mov rax, [rbp-128]
+  add rax, qword [rbp-144]
   mov r14, rax
-  mov [rbp-160], r14
-  mov rdi, str_12
-  mov rsi, [rbp-176]
+  mov [rbp-128], r14
+  mov rdi, str_13
+  mov rsi, [rbp-144]
   mov eax, 0
   call printf
-.end_if_10:
-  mov rax, [rbp-168]
-  inc rax
-  mov r12, rax
-  mov [rbp-168], r12
-  jmp .while_cond_6
-.while_end_8:
+  jmp .end_if_11
+.else_12:
   mov rdi, str_14
-  mov rsi, [rbp-160]
+  mov rsi, [rbp-144]
+  mov eax, 0
+  call printf
+.end_if_11:
+  mov rax, [rbp-136]
+  inc rax
+  mov r15, rax
+  mov [rbp-136], r15
+.while_cond_7:
+  mov rax, [rbp-136]
+  cmp rax, 10
+  setl al
+  movzx rax, al
+  mov rbx, rax
+  mov rax, rbx
+  cmp rax, 0
+  jne .while_body_8
+  jmp .while_end_9
+.while_body_8:
+  lea rax, [rbp-88]
+  mov rcx, [rbp-136]
+  shl rcx, 3
+  add rax, rcx
+  mov r12, rax
+  mov r13, [r12]
+  mov [rbp-144], r13
+  mov rax, [rbp-144]
+  cqo
+  mov rcx, 10
+  idiv rcx
+  mov r14, rax
+  mov rdi, r14
+  call is_even
+  cmp rax, 0
+  je .else_17
+.then_15:
+  mov rax, [rbp-128]
+  add rax, qword [rbp-144]
+  mov r15, rax
+  mov [rbp-128], r15
+  mov rdi, str_18
+  mov rsi, [rbp-144]
+  mov eax, 0
+  call printf
+  jmp .end_if_16
+.else_17:
+  mov rdi, str_19
+  mov rsi, [rbp-144]
+  mov eax, 0
+  call printf
+.end_if_16:
+  mov rax, [rbp-136]
+  inc rax
+  mov r15, rax
+  mov [rbp-136], r15
+  jmp .while_cond_7
+.while_end_9:
+  mov rdi, str_20
+  mov rsi, [rbp-128]
   mov eax, 0
   call printf
   mov rdi, 16
   call malloc
-  mov [rbp-208], rax
-  mov rdi, str_15
-  mov rsi, [rbp-208]
+  mov [rbp-344], rax
+  mov rdi, str_21
+  mov rsi, [rbp-344]
   mov eax, 0
   call printf
-  mov rdi, [rbp-208]
+  mov rdi, [rbp-344]
   call free
-  mov rdi, str_16
+  mov rdi, str_22
   mov eax, 0
   call printf
-  mov rax, [rbp-160]
+  mov rax, [rbp-128]
   pop r15
   pop r14
   pop r13
@@ -178,8 +226,10 @@ _start:
 
 section .data
 str_1: db `Starting combined Sprint 6 & 7 test...\n`, 0
-str_12: db `Added even index element: %d\n`, 0
-str_13: db `Skipped odd index element: %d\n`, 0
-str_14: db `Final sum of even index elements: %d\n`, 0
-str_15: db `Allocated 16 bytes at address: %d\n`, 0
-str_16: db `Test completed successfully!\n`, 0
+str_13: db `Added even index element: %d\n`, 0
+str_14: db `Skipped odd index element: %d\n`, 0
+str_18: db `Added even index element: %d\n`, 0
+str_19: db `Skipped odd index element: %d\n`, 0
+str_20: db `Final sum of even index elements: %d\n`, 0
+str_21: db `Allocated 16 bytes at address: %d\n`, 0
+str_22: db `Test completed successfully!\n`, 0

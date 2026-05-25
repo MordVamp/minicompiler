@@ -51,27 +51,28 @@ main:
   mov rax, r15
   add rax, r13
   mov r14, rax
+  mov rbx, r14
   lea rax, [rbp-64]
   mov rcx, 0
   shl rcx, 3
   add rax, rcx
-  mov r12, rax
-  mov rcx, 1
-  mov [r12], rcx
-  lea rax, [rbp-64]
-  mov rcx, 1
-  shl rcx, 3
-  add rax, rcx
   mov r15, rax
-  mov rcx, 2
+  mov rcx, 1
   mov [r15], rcx
   lea rax, [rbp-64]
-  mov rcx, 2
+  mov rcx, 1
   shl rcx, 3
   add rax, rcx
   mov r13, rax
-  mov rcx, 3
+  mov rcx, 2
   mov [r13], rcx
+  lea rax, [rbp-64]
+  mov rcx, 2
+  shl rcx, 3
+  add rax, rcx
+  mov r14, rax
+  mov rcx, 3
+  mov [r14], rcx
 .main_epilogue_fallback:
   pop r15
   pop r14
