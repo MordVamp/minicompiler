@@ -1,3 +1,10 @@
 ./run.sh examples/sprint7/test_extern.src        # compile & run
 ./run.sh examples/sprint6/sprint6_control.src mybin  # custom binary name
 ./run.sh examples/sprint7/sprint7_arrays.src - --keep  # keep .asm + .o files
+
+---
+./run.sh examples/bubble_sort.src
+./run.sh examples/quick_sort.src
+
+# keep intermediate .asm and .o
+./run.sh examples/bubble_sort.src - --keep

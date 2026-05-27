@@ -1,0 +1,82 @@
+fn main() -> int {
+    int arr[10];
+    arr[0] = 64;
+    arr[1] = 34;
+    arr[2] = 25;
+    arr[3] = 12;
+    arr[4] = 22;
+    arr[5] = 11;
+    arr[6] = 90;
+    arr[7] = 45;
+    arr[8] = 7;
+    arr[9] = 53;
+
+    printf("Quick Sort\n");
+    printf("Before: ");
+    for (int i = 0; i < 10; i = i + 1) {
+        printf("%d ", arr[i]);
+    }
+    printf("\n");
+
+    // Iterative quicksort using an explicit stack (stored in two int arrays).
+    // stack_lo[k] / stack_hi[k] hold the [lo, hi] range of sub-arrays to sort.
+    int stack_lo[32];
+    int stack_hi[32];
+    int top = 0;
+
+    stack_lo[0] = 0;
+    stack_hi[0] = 9;
+    top = 1;
+
+    while (top > 0) {
+        top = top - 1;
+        int lo = stack_lo[top];
+        int hi = stack_hi[top];
+
+        if (lo < hi) {
+            // Partition: pivot = arr[hi] (last element)
+            int pivot = arr[hi];
+            int i = lo - 1;
+            int j = lo;
+
+            while (j < hi) {
+                if (arr[j] <= pivot) {
+                    i = i + 1;
+                    int tmp = arr[i];
+                    arr[i] = arr[j];
+                    arr[j] = tmp;
+                }
+                j = j + 1;
+            }
+
+            // Place pivot in its final position
+            int pi = i + 1;
+            int tmp2 = arr[pi];
+            arr[pi] = arr[hi];
+            arr[hi] = tmp2;
+
+            // Push left sub-array
+            if (lo < pi - 1) {
+                stack_lo[top] = lo;
+                stack_hi[top] = pi - 1;
+                top = top + 1;
+            }
+
+            // Push right sub-array
+            if (pi + 1 < hi) {
+                stack_lo[top] = pi + 1;
+                stack_hi[top] = hi;
+                top = top + 1;
+            }
+        }
+    }
+
+    printf("After:  ");
+    for (int i = 0; i < 10; i = i + 1) {
+        printf("%d ", arr[i]);
+    }
+    printf("\n");
+    printf("Quick sort complete!\n");
+
+    return 0;
+}
