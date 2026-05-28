@@ -81,6 +81,21 @@ enum Commands {
         #[arg(short, long)]
         input: PathBuf,
     },
+    /// Запуск bash скрипта run.sh для компиляции и запуска (требует nasm и gcc).
+    /// Примеры использования:
+    ///   cargo run -- run examples/quick_sort.src
+    ///   cargo run -- run examples/sprint7/test_extern.src
+    ///   cargo run -- run examples/sprint6/sprint6_control.src mybin
+    ///   cargo run -- run examples/bubble_sort.src - --keep
+    Run {
+        /// Путь к исходному файлу .src
+        input: String,
+        /// Имя выходного бинарного файла (опционально)
+        binary_name: Option<String>,
+        /// Сохранить промежуточные .asm и .o файлы
+        #[arg(long)]
+        keep: bool,
+    },
 }
 
 fn main() -> Result<()> {
@@ -94,6 +109,41 @@ fn main() -> Result<()> {
         Commands::Compile { input, output, verbose, stdout, optimize } => run_compile(&input, output.as_ref(), verbose, stdout, optimize),
         Commands::Dump { input } => run_dump(&input),
         Commands::Test => run_tests(),
+        Commands::Run { input, binary_name, keep } => run_bash_script(&input, binary_name, keep),
+    }
+}
+
+fn run_bash_script(input: &str, binary_name: Option<String>, keep: bool) -> Result<()> {
+    use std::process::Command;
+    let mut args = vec![input.to_string()];
+    if let Some(bin) = binary_name {
+        args.push(bin);
+    } else if keep {
+        args.push("-".to_string());
+    }
+    if keep {
+        args.push("--keep".to_string());
+    }
+
+    let bash_path = if cfg!(target_os = "windows") {
+        if std::path::Path::new("C:\\Program Files\\Git\\bin\\bash.exe").exists() {
+            "C:\\Program Files\\Git\\bin\\bash.exe"
+        } else {
+            "bash"
+        }
+    } else {
+        "bash"
+    };
+
+    let status = Command::new(bash_path)
+        .arg("./run.sh")
+        .args(&args)
+        .status();
+
+    match status {
+        Ok(s) if s.success() => Ok(()),
+        Ok(s) => Err(anyhow::anyhow!("Script failed with exit code: {}", s)),
+        Err(e) => Err(anyhow::anyhow!("Failed to execute bash at '{}' (is it installed and in PATH?): {}", bash_path, e)),
     }
 }
 
