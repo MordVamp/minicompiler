@@ -73,7 +73,7 @@ fn test_array_codegen() {
     let asm = codegen.generate();
     
     // Проверяем ассемблер
-    assert!(asm.contains("lea rax, [rbp"));
+    assert!(asm.contains("call malloc"));
     assert!(asm.contains("shl rcx, 3"));
 }
 
