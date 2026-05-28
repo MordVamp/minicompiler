@@ -15,7 +15,7 @@ global main
 main:
   push rbp
   mov rbp, rsp
-  sub rsp, 512
+  sub rsp, 456
   push rbx
   push r12
   push r13
@@ -95,11 +95,13 @@ main:
   mov rdi, str_1
   mov eax, 0
   call printf
+  mov [rbp-88], rax
   mov rdi, str_2
   mov eax, 0
   call printf
+  mov [rbp-88], rax
   xor eax, eax
-  mov [rbp-104], rax
+  mov [rbp-88], rax
 .for_cond_3:
   cmp rax, 10
   setl al
@@ -111,7 +113,7 @@ main:
   jmp .for_end_6
 .for_body_4:
   lea rax, [rbp-80]
-  mov rcx, [rbp-104]
+  mov rcx, [rbp-88]
   shl rcx, 3
   add rax, rcx
   mov r12, rax
@@ -120,25 +122,27 @@ main:
   mov rsi, r13
   mov eax, 0
   call printf
+  mov [rbp-192], rax
 .for_update_5:
-  mov rax, [rbp-104]
+  mov rax, [rbp-88]
   inc rax
   mov r14, rax
-  mov [rbp-104], r14
+  mov [rbp-88], r14
   jmp .for_cond_3
 .for_end_6:
   mov rdi, str_8
   mov eax, 0
   call printf
+  mov [rbp-192], rax
   mov rax, 10
-  mov [rbp-224], rax
+  mov [rbp-192], rax
   xor eax, eax
-  mov [rbp-232], rax
+  mov [rbp-200], rax
 .for_cond_9:
-  mov rax, [rbp-224]
+  mov rax, [rbp-192]
   dec rax
   mov r15, rax
-  mov rax, [rbp-232]
+  mov rax, [rbp-200]
   cmp rax, r15
   setl al
   movzx rax, al
@@ -149,15 +153,15 @@ main:
   jmp .for_end_12
 .for_body_10:
   xor eax, eax
-  mov [rbp-288], rax
+  mov [rbp-256], rax
 .for_cond_13:
-  mov rax, [rbp-224]
+  mov rax, [rbp-192]
   dec rax
   mov r12, rax
   mov rax, r12
-  sub rax, qword [rbp-232]
+  sub rax, qword [rbp-200]
   mov r13, rax
-  mov rax, [rbp-288]
+  mov rax, [rbp-256]
   cmp rax, r13
   setl al
   movzx rax, al
@@ -168,12 +172,12 @@ main:
   jmp .for_end_16
 .for_body_14:
   lea rax, [rbp-80]
-  mov rcx, [rbp-288]
+  mov rcx, [rbp-256]
   shl rcx, 3
   add rax, rcx
   mov r15, rax
   mov rbx, [r15]
-  mov rax, [rbp-288]
+  mov rax, [rbp-256]
   inc rax
   mov r12, rax
   lea rax, [rbp-80]
@@ -192,13 +196,13 @@ main:
   je .end_if_18
 .then_17:
   lea rax, [rbp-80]
-  mov rcx, [rbp-288]
+  mov rcx, [rbp-256]
   shl rcx, 3
   add rax, rcx
   mov r12, rax
   mov r13, [r12]
-  mov [rbp-328], r13
-  mov rax, [rbp-288]
+  mov [rbp-296], r13
+  mov rax, [rbp-256]
   inc rax
   mov rbx, rax
   lea rax, [rbp-80]
@@ -208,12 +212,12 @@ main:
   mov r14, rax
   mov r15, [r14]
   lea rax, [rbp-80]
-  mov rcx, [rbp-288]
+  mov rcx, [rbp-256]
   shl rcx, 3
   add rax, rcx
   mov r12, rax
   mov [r12], r15
-  mov rax, [rbp-288]
+  mov rax, [rbp-256]
   inc rax
   mov r13, rax
   lea rax, [rbp-80]
@@ -221,28 +225,28 @@ main:
   shl rcx, 3
   add rax, rcx
   mov rbx, rax
-  mov rcx, [rbp-328]
+  mov rcx, [rbp-296]
   mov [rbx], rcx
 .end_if_18:
 .for_update_15:
-  mov rax, [rbp-288]
+  mov rax, [rbp-256]
   inc rax
   mov r14, rax
-  mov [rbp-288], r14
+  mov [rbp-256], r14
   jmp .for_cond_13
 .for_end_16:
 .for_update_11:
-  mov rax, [rbp-232]
+  mov rax, [rbp-200]
   inc rax
   mov r15, rax
-  mov [rbp-232], r15
+  mov [rbp-200], r15
   jmp .for_cond_9
 .for_end_12:
   mov rdi, str_19
   mov eax, 0
   call printf
   xor eax, eax
-  mov [rbp-104], rax
+  mov [rbp-88], rax
 .for_cond_20:
   cmp rax, 10
   setl al
@@ -254,7 +258,7 @@ main:
   jmp .for_end_23
 .for_body_21:
   lea rax, [rbp-80]
-  mov rcx, [rbp-104]
+  mov rcx, [rbp-88]
   shl rcx, 3
   add rax, rcx
   mov r13, rax
@@ -264,15 +268,16 @@ main:
   mov eax, 0
   call printf
 .for_update_22:
-  mov rax, [rbp-104]
+  mov rax, [rbp-88]
   inc rax
   mov r14, rax
-  mov [rbp-104], r14
+  mov [rbp-88], r14
   jmp .for_cond_20
 .for_end_23:
   mov rdi, str_25
   mov eax, 0
   call printf
+  mov [rbp-88], rax
   mov rdi, str_26
   mov eax, 0
   call printf

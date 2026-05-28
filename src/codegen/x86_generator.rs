@@ -12,12 +12,15 @@ pub struct X86Generator {
     params: Vec<Operand>,
     strings: Vec<(String, String)>,
     reg_alloc: Option<crate::codegen::register_allocator::RegAlloc>,
+    /// Keys (StackFrame format) of arrays allocated on the heap via malloc.
+    heap_arrays: std::collections::HashSet<String>,
 }
 
 impl X86Generator {
     pub fn new(blocks: HashMap<String, BasicBlock>, functions: Vec<FunctionMetadata>, strings: Vec<(String, String)>) -> Self {
         Self {
             blocks,
+            heap_arrays: std::collections::HashSet::new(),
             functions,
             output: String::new(),
             stack_frame: StackFrame::new(),
@@ -82,24 +85,44 @@ impl X86Generator {
         let reg_alloc = crate::codegen::register_allocator::RegisterAllocator::allocate(&ordered_blocks);
         self.reg_alloc = Some(reg_alloc);
 
+        // Build the set of stack_frame-style keys for operands in physical registers.
+        let reg_keys: std::collections::HashSet<String> = {
+            let ra = self.reg_alloc.as_ref().unwrap();
+            ra.sf_reg_keys()
+        };
+
+        // Reserve stack slots for spilled parameters first.
         for p_name in &func.parameters {
             let op = Operand::Var { name: p_name.clone(), version: 0 };
-            if self.reg_alloc.as_ref().and_then(|ra| ra.reg_for(&op)).is_none() {
+            let key = crate::codegen::stack_frame::StackFrame::op_key(&op);
+            if !reg_keys.contains(&key) {
                 self.stack_frame.get_offset(&op);
             }
         }
 
-        for blk_label in &reachable {
-            let instructions = self.blocks.get(blk_label).map(|b| b.instructions.clone()).unwrap_or_default();
-            for inst in instructions {
-                self.track_operands(&inst);
-            }
-        }
+        // Liveness-aware stack slot allocation:
+        //   1. Arrays get fixed contiguous blocks.
+        //   2. Scalar temps whose live ranges don't overlap share the same slot.
+        let all_instructions: Vec<_> = reachable
+            .iter()
+            .flat_map(|lbl| self.blocks.get(lbl).map(|b| b.instructions.clone()).unwrap_or_default())
+            .collect();
+        self.stack_frame.allocate_with_liveness(&all_instructions, &reg_keys);
+
+        // Stack alignment fix:
+        // After push rbp rsp≡0(mod16). Pushing K callee-saved regs = K*8 bytes.
+        // sub rsp, N follows. We need (K*8 + N) ≡ 0 (mod 16).
+        // aligned_size() is always 16-aligned; when K is odd we add 8 bytes of pad.
+        let num_saved = self.reg_alloc.as_ref().map(|ra| ra.used_regs.len()).unwrap_or(0);
+        let raw_stack = self.stack_frame.aligned_size();
+        let stack_size = if num_saved % 2 == 0 {
+            raw_stack
+        } else {
+            if raw_stack == 0 { 8 } else { raw_stack + 8 }
+        };
 
         self.output.push_str("  push rbp\n");
         self.output.push_str("  mov rbp, rsp\n");
-
-        let stack_size = self.stack_frame.aligned_size();
         if stack_size > 0 {
             self.output.push_str(&format!("  sub rsp, {}\n", stack_size));
         }
@@ -143,70 +166,6 @@ impl X86Generator {
         self.output.push_str("  ret\n");
     }
 
-    fn track_operands(&mut self, inst: &IRInstruction) {
-        let sf = &mut self.stack_frame;
-        let reg_alloc = &self.reg_alloc;
-        let mut track = |op: &Operand| {
-            if let Operand::Var { .. } | Operand::Temp { .. } = op {
-                if reg_alloc.as_ref().and_then(|ra| ra.reg_for(op)).is_none() {
-                    sf.get_offset(op);
-                }
-            }
-        };
-
-        match inst {
-            IRInstruction::Add { result, left, right } | IRInstruction::Sub { result, left, right } |
-            IRInstruction::Mul { result, left, right } | IRInstruction::Div { result, left, right } |
-            IRInstruction::Mod { result, left, right } |
-            IRInstruction::And { result, left, right } | IRInstruction::Or { result, left, right } |
-            IRInstruction::Xor { result, left, right } |
-            IRInstruction::Equal { result, left, right } | IRInstruction::NotEqual { result, left, right } |
-            IRInstruction::Less { result, left, right } | IRInstruction::LessEqual { result, left, right } |
-            IRInstruction::Greater { result, left, right } | IRInstruction::GreaterEqual { result, left, right } => {
-                track(result);
-                track(left);
-                track(right);
-            }
-            IRInstruction::Move { result, source: operand } => {
-                track(result);
-                track(operand);
-            }
-            IRInstruction::Not { result, operand } | IRInstruction::Neg { result, operand } => {
-                track(result);
-                track(operand);
-            }
-            IRInstruction::Call { result, num_args, .. } => {
-                if let Some(r) = result { track(r); }
-            }
-            IRInstruction::Phi { result, sources } => {
-                track(result);
-                for (op, _) in sources { track(op); }
-            }
-            IRInstruction::Alloca { result, size } => {
-                sf.allocate_array(result, *size);
-            }
-            IRInstruction::Load { result, address } => {
-                track(result);
-                track(address);
-            }
-            IRInstruction::Store { address, source } => {
-                track(address);
-                track(source);
-            }
-            IRInstruction::GetElementPtr { result, base, offset } => {
-                track(result);
-                track(base);
-                track(offset);
-            }
-            IRInstruction::JumpIfTrue { condition, .. } | IRInstruction::JumpIfFalse { condition, .. } => {
-                track(condition);
-            }
-            IRInstruction::Return { value: Some(op) } | IRInstruction::Param { value: op } => {
-                track(op);
-            }
-            IRInstruction::Return { value: None } | IRInstruction::Jump { .. } => {}
-        }
-    }
 
     fn get_reachable_blocks(&self, start: &String) -> Vec<String> {
         let mut post_order: Vec<String> = Vec::new();
@@ -548,7 +507,14 @@ impl X86Generator {
                 code.push_str("  xor rax, 1\n");
                 code.push_str(&store);
             }
-            IRInstruction::Alloca { .. } => {}
+            IRInstruction::Alloca { result, size } => {
+                // Always heap-allocate arrays via malloc.
+                let bytes = (*size as i64) * 8;
+                code.push_str(&format!("  mov rdi, {}\n", bytes));
+                code.push_str("  call malloc\n");
+                let store = self.store_operand(result, "rax");
+                code.push_str(&store);
+            }
             IRInstruction::Load { result, address } => {
                 let addr_reg = if let Some(reg) = self.reg_for(address) {
                     reg.to_string()
@@ -583,11 +549,20 @@ impl X86Generator {
                 code.push_str(&format!("  mov [{}], {}\n", addr_reg, src_reg));
             }
             IRInstruction::GetElementPtr { result, base, offset } => {
-                let base_offset = self.stack_frame.get_offset(base);
-                let load = self.load_operand("rcx", offset);
+                let base_key = StackFrame::op_key(base);
+                let load_idx = self.load_operand("rcx", offset);
                 let store = self.store_operand(result, "rax");
-                code.push_str(&format!("  lea rax, [rbp{}]\n", if base_offset >= 0 { format!("+{}", base_offset) } else { base_offset.to_string() }));
-                code.push_str(&load);
+                if self.heap_arrays.contains(&base_key) {
+                    // Heap array: load pointer from its stack slot, then add index*8
+                    let load_ptr = self.load_operand("rax", base);
+                    code.push_str(&load_ptr);
+                } else {
+                    // Stack array: compute base address via lea
+                    let base_off = self.stack_frame.get_offset(base);
+                    let off_str = if base_off >= 0 { format!("+{}", base_off) } else { base_off.to_string() };
+                    code.push_str(&format!("  lea rax, [rbp{}]\n", off_str));
+                }
+                code.push_str(&load_idx);
                 code.push_str("  shl rcx, 3\n");
                 code.push_str("  add rax, rcx\n");
                 code.push_str(&store);

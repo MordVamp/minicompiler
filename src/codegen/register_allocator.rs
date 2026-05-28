@@ -31,6 +31,23 @@ impl RegAlloc {
         };
         self.reg_map.get(&key).copied()
     }
+
+    /// Returns the set of StackFrame-style keys (`var_X` / `temp_X`) for all
+    /// operands that have been assigned a physical register.
+    /// Used by the liveness-aware stack allocator to skip already-allocated ops.
+    pub fn sf_reg_keys(&self) -> std::collections::HashSet<String> {
+        self.reg_map.keys().map(|k| {
+            if let Some(name) = k.strip_prefix("v_") {
+                format!("var_{}", name)
+            } else if let Some(rest) = k.strip_prefix("t_") {
+                // rest is "id_version" — StackFrame uses only id
+                let id = rest.split('_').next().unwrap_or(rest);
+                format!("temp_{}", id)
+            } else {
+                k.clone()
+            }
+        }).collect()
+    }
 }
 
 pub struct RegisterAllocator;
