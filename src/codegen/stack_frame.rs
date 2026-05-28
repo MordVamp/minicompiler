@@ -69,15 +69,20 @@ impl StackFrame {
     ///
     /// `instructions` — flat RPO instruction sequence for the function.
     /// `reg_keys`     — op_keys already assigned to physical registers (skip).
+    /// `heap_arrays`  — op_keys of arrays that will be malloc'd (skip stack allocation).
     pub fn allocate_with_liveness(
         &mut self,
         instructions: &[IRInstruction],
         reg_keys: &HashSet<String>,
+        heap_arrays: &HashSet<String>,
     ) {
-        // ── Phase 1: arrays get fixed contiguous regions ─────────────────────
+        // ── Phase 1: arrays get fixed contiguous regions (only if not on heap) ──
         for inst in instructions {
             if let IRInstruction::Alloca { result, size } = inst {
-                self.allocate_array(result, *size);
+                let key = Self::op_key(result);
+                if !heap_arrays.contains(&key) {
+                    self.allocate_array(result, *size);
+                }
             }
         }
 

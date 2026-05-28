@@ -72,6 +72,7 @@ impl X86Generator {
         self.output.push_str(&format!("{}:\n", func.name));
 
         self.stack_frame.reset();
+        self.heap_arrays.clear(); // Clear heap arrays for each function
 
         let reachable = self.get_reachable_blocks(&entry_label);
         
@@ -91,6 +92,20 @@ impl X86Generator {
             ra.sf_reg_keys()
         };
 
+        // Collect all instructions for liveness analysis
+        let all_instructions: Vec<_> = reachable
+            .iter()
+            .flat_map(|lbl| self.blocks.get(lbl).map(|b| b.instructions.clone()).unwrap_or_default())
+            .collect();
+
+        // Populate heap_arrays BEFORE stack frame allocation
+        for inst in &all_instructions {
+            if let IRInstruction::Alloca { result, .. } = inst {
+                let key = StackFrame::op_key(result);
+                self.heap_arrays.insert(key);
+            }
+        }
+
         // Reserve stack slots for spilled parameters first.
         for p_name in &func.parameters {
             let op = Operand::Var { name: p_name.clone(), version: 0 };
@@ -103,11 +118,7 @@ impl X86Generator {
         // Liveness-aware stack slot allocation:
         //   1. Arrays get fixed contiguous blocks.
         //   2. Scalar temps whose live ranges don't overlap share the same slot.
-        let all_instructions: Vec<_> = reachable
-            .iter()
-            .flat_map(|lbl| self.blocks.get(lbl).map(|b| b.instructions.clone()).unwrap_or_default())
-            .collect();
-        self.stack_frame.allocate_with_liveness(&all_instructions, &reg_keys);
+        self.stack_frame.allocate_with_liveness(&all_instructions, &reg_keys, &self.heap_arrays);
 
         // Stack alignment fix:
         // After push rbp rsp≡0(mod16). Pushing K callee-saved regs = K*8 bytes.
@@ -514,6 +525,10 @@ impl X86Generator {
                 code.push_str("  call malloc\n");
                 let store = self.store_operand(result, "rax");
                 code.push_str(&store);
+                
+                // Ensure the key is in heap_arrays
+                let key = StackFrame::op_key(result);
+                self.heap_arrays.insert(key);
             }
             IRInstruction::Load { result, address } => {
                 let addr_reg = if let Some(reg) = self.reg_for(address) {
