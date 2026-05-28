@@ -226,6 +226,39 @@ Sequentially prints the output of `lex`, `parse`, `check --verbose`, and `ir`. T
 
 ---
 
+### `run` — Запуск скрипта компиляции и исполнения (Спринт 7+)
+
+Автоматизирует процесс сборки: транслирует `.src` в `.asm` через `minicompiler`, собирает через `nasm`, линкует через `gcc` и сразу запускает бинарник. 
+
+```bash
+cargo run -- run <FILE> [BIN_NAME] [--keep]
+```
+
+| Аргумент / Флаг | Описание |
+| :--- | :--- |
+| `<FILE>` | Путь к исходному `.src` файлу (Обязательный) |
+| `[BIN_NAME]` | Имя итогового бинарного файла (Опционально) |
+| `--keep` | Сохранить сгенерированные `.asm` и `.o` файлы после линковки |
+
+**Примеры (через внутренний CLI):**
+```bash
+cargo run -- run examples/quick_sort.src
+cargo run -- run examples/sprint7/test_extern.src
+cargo run -- run examples/sprint6/sprint6_control.src mybin
+cargo run -- run examples/bubble_sort.src - --keep
+```
+
+**Прямой вызов скрипта (bash):**
+```bash
+./run.sh examples/sprint7/test_extern.src        # compile & run
+./run.sh examples/sprint6/sprint6_control.src mybin  # custom binary name
+./run.sh examples/sprint7/sprint7_arrays.src - --keep  # keep .asm + .o files
+./run.sh examples/quick_sort.src
+./run.sh examples/bubble_sort.src - --keep
+```
+
+---
+
 ### `compile` — Генерация кода x86-64 (Sprint 5-7)
 
 Транслирует исходный код в ассемблер x86-64 (формат NASM). Поддерживает массивы и внешние функции.
