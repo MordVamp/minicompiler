@@ -14,6 +14,7 @@ pub struct X86Generator {
     reg_alloc: Option<crate::codegen::register_allocator::RegAlloc>,
     /// Keys (StackFrame format) of arrays allocated on the heap via malloc.
     heap_arrays: std::collections::HashSet<String>,
+    heap_arrays_ops: Vec<Operand>,
 }
 
 impl X86Generator {
@@ -21,6 +22,7 @@ impl X86Generator {
         Self {
             blocks,
             heap_arrays: std::collections::HashSet::new(),
+            heap_arrays_ops: Vec::new(),
             functions,
             output: String::new(),
             stack_frame: StackFrame::new(),
@@ -73,6 +75,7 @@ impl X86Generator {
 
         self.stack_frame.reset();
         self.heap_arrays.clear(); // Clear heap arrays for each function
+        self.heap_arrays_ops.clear();
 
         let reachable = self.get_reachable_blocks(&entry_label);
         
@@ -103,6 +106,7 @@ impl X86Generator {
             if let IRInstruction::Alloca { result, .. } = inst {
                 let key = StackFrame::op_key(result);
                 self.heap_arrays.insert(key);
+                self.heap_arrays_ops.push(result.clone());
             }
         }
 
@@ -167,6 +171,14 @@ impl X86Generator {
 
         // Гарантируем наличие эпилога и возврата из функции (особенно для void функций или main)
         self.output.push_str(&format!(".{}_epilogue_fallback:\n", func.name));
+        
+        let ops = self.heap_arrays_ops.clone();
+        for op in ops {
+            let load_ptr = self.load_operand("rdi", &op);
+            self.output.push_str(&load_ptr);
+            self.output.push_str("  call free\n");
+        }
+
         if let Some(ref ra) = self.reg_alloc {
             for reg in ra.used_regs.iter().rev() {
                 self.output.push_str(&format!("  pop {}\n", reg));
@@ -417,6 +429,13 @@ impl X86Generator {
                 }
             }
             IRInstruction::Return { value } => {
+                let ops = self.heap_arrays_ops.clone();
+                for op in ops {
+                    let load_ptr = self.load_operand("rdi", &op);
+                    code.push_str(&load_ptr);
+                    code.push_str("  call free\n");
+                }
+                
                 if let Some(v) = value {
                     let load = self.load_operand("rax", v);
                     code.push_str(&load);
