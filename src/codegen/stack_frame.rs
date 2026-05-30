@@ -140,6 +140,7 @@ impl StackFrame {
 fn scalar_operands(inst: &IRInstruction) -> Vec<Operand> {
     let mut v = Vec::new();
     match inst {
+        IRInstruction::DebugLoc { .. } => {}
         IRInstruction::Add { result, left, right }
         | IRInstruction::Sub { result, left, right }
         | IRInstruction::Mul { result, left, right }

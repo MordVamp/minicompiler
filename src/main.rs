@@ -95,6 +95,12 @@ enum Commands {
         /// Сохранить промежуточные .asm и .o файлы
         #[arg(long)]
         keep: bool,
+        /// Замерить время выполнения (time)
+        #[arg(long)]
+        time: bool,
+        /// Замерить аппаратные метрики производительности (perf stat)
+        #[arg(long)]
+        perf: bool,
     },
 }
 
@@ -109,20 +115,26 @@ fn main() -> Result<()> {
         Commands::Compile { input, output, verbose, stdout, optimize } => run_compile(&input, output.as_ref(), verbose, stdout, optimize),
         Commands::Dump { input } => run_dump(&input),
         Commands::Test => run_tests(),
-        Commands::Run { input, binary_name, keep } => run_bash_script(&input, binary_name, keep),
+        Commands::Run { input, binary_name, keep, time, perf } => run_bash_script(&input, binary_name, keep, time, perf),
     }
 }
 
-fn run_bash_script(input: &str, binary_name: Option<String>, keep: bool) -> Result<()> {
+fn run_bash_script(input: &str, binary_name: Option<String>, keep: bool, time: bool, perf: bool) -> Result<()> {
     use std::process::Command;
     let mut args = vec![input.to_string()];
     if let Some(bin) = binary_name {
         args.push(bin);
-    } else if keep {
-        args.push("-".to_string());
+    } else if keep || time || perf {
+        args.push("-".to_string()); // Default binary name placeholder
     }
     if keep {
         args.push("--keep".to_string());
+    }
+    if time {
+        args.push("--time".to_string());
+    }
+    if perf {
+        args.push("--perf".to_string());
     }
 
     let bash_path = if cfg!(target_os = "windows") {

@@ -290,6 +290,9 @@ impl X86Generator {
     fn generate_instruction(&mut self, inst: &IRInstruction) {
         let mut code = String::new();
         match inst {
+            IRInstruction::DebugLoc { line, col } => {
+                code.push_str(&format!("  ; .loc 1 {} {}\n", line, col));
+            }
             IRInstruction::Add { result, left, right } => {
                 let right_str = self.operand_to_str(right);
                 let load = self.load_operand("rax", left);

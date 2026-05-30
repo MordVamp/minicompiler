@@ -9,6 +9,8 @@
 # Examples:
 #   ./run.sh examples/sprint7/test_extern.src
 #   ./run.sh examples/sprint6/sprint6_control.src out --keep
+#   ./run.sh examples/quick_sort.src - --time
+#   ./run.sh examples/quick_sort.src - --perf
 
 set -euo pipefail
 
@@ -20,9 +22,16 @@ need() { command -v "$1" &>/dev/null || die "Required tool not found: $1 (instal
 SRC="${1:-}"
 BIN_NAME="${2:-}"
 KEEP=0
-for arg in "$@"; do [[ "$arg" == "--keep" ]] && KEEP=1; done
+USE_TIME=0
+USE_PERF=0
 
-[[ -z "$SRC" ]] && { echo "Usage: $0 <source.src> [binary_name] [--keep]"; exit 1; }
+for arg in "$@"; do
+    [[ "$arg" == "--keep" ]] && KEEP=1
+    [[ "$arg" == "--time" ]] && USE_TIME=1
+    [[ "$arg" == "--perf" ]] && USE_PERF=1
+done
+
+[[ -z "$SRC" ]] && { echo "Usage: $0 <source.src> [binary_name] [--keep] [--time] [--perf]"; exit 1; }
 [[ -f "$SRC" ]] || die "Source file not found: $SRC"
 
 # ── derive file names ─────────────────────────────────────────────────────────
@@ -54,8 +63,18 @@ gcc "$OBJ_FILE" -o "$BIN_NAME" -no-pie -nostartfiles -lc
 # ── step 4: run ───────────────────────────────────────────────────────────────
 echo "🚀 [4/4] Running    ${BIN_NAME}"
 echo "─────────────────────────────────────"
-"$BIN_NAME"
-EXIT_CODE=$?
+
+if [[ "$USE_PERF" -eq 1 ]]; then
+    need perf "sudo apt-get install linux-tools-common linux-tools-generic"
+    perf stat "$BIN_NAME"
+    EXIT_CODE=$?
+elif [[ "$USE_TIME" -eq 1 ]]; then
+    time "$BIN_NAME"
+    EXIT_CODE=$?
+else
+    "$BIN_NAME"
+    EXIT_CODE=$?
+fi
 echo "─────────────────────────────────────"
 echo "✅ Exit code: ${EXIT_CODE}"
 

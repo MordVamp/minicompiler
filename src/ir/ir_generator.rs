@@ -178,6 +178,9 @@ impl IRGenerator {
     }
 
     fn visit_statement(&mut self, stmt: &StatementNode) {
+        let pos = stmt.position();
+        self.emit(IRInstruction::DebugLoc { line: pos.line, col: pos.column });
+
         match stmt {
             StatementNode::Block { statements, .. } => {
                 for s in statements {

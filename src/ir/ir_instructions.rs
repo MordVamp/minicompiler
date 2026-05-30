@@ -60,6 +60,9 @@ pub enum IRInstruction {
     Return { value: Option<Operand> },
     
     Phi { result: Operand, sources: Vec<(Operand, String)> }, // (Operand, BlockLabel)
+    
+    // Debug info
+    DebugLoc { line: usize, col: usize },
 }
 
 impl fmt::Display for IRInstruction {
@@ -115,6 +118,7 @@ impl fmt::Display for IRInstruction {
                 let s_str = sources.iter().map(|(op, blk)| format!("{}[{}]", op, blk)).collect::<Vec<_>>().join(", ");
                 write!(f, "{} = PHI {}", result, s_str)
             }
+            IRInstruction::DebugLoc { line, col } => write!(f, "; .loc {} {}", line, col),
         }
     }
 }
