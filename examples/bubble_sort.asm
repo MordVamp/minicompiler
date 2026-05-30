@@ -15,272 +15,341 @@ global main
 main:
   push rbp
   mov rbp, rsp
-  sub rsp, 456
+  sub rsp, 552
   push rbx
   push r12
   push r13
   push r14
   push r15
 .func_main:
-  lea rax, [rbp-80]
-  mov rcx, 0
-  shl rcx, 3
-  add rax, rcx
-  mov rbx, rax
-  mov rcx, 64
-  mov [rbx], rcx
-  lea rax, [rbp-80]
-  mov rcx, 1
-  shl rcx, 3
-  add rax, rcx
-  mov r12, rax
-  mov rcx, 34
-  mov [r12], rcx
-  lea rax, [rbp-80]
-  mov rcx, 2
-  shl rcx, 3
-  add rax, rcx
-  mov r13, rax
-  mov rcx, 25
-  mov [r13], rcx
-  lea rax, [rbp-80]
-  mov rcx, 3
-  shl rcx, 3
-  add rax, rcx
-  mov r14, rax
-  mov rcx, 12
-  mov [r14], rcx
-  lea rax, [rbp-80]
-  mov rcx, 4
-  shl rcx, 3
-  add rax, rcx
-  mov r15, rax
-  mov rcx, 22
-  mov [r15], rcx
-  lea rax, [rbp-80]
-  mov rcx, 5
-  shl rcx, 3
-  add rax, rcx
-  mov rbx, rax
-  mov rcx, 11
-  mov [rbx], rcx
-  lea rax, [rbp-80]
-  mov rcx, 6
-  shl rcx, 3
-  add rax, rcx
-  mov r12, rax
-  mov rcx, 90
-  mov [r12], rcx
-  lea rax, [rbp-80]
-  mov rcx, 7
-  shl rcx, 3
-  add rax, rcx
-  mov r13, rax
-  mov rcx, 45
-  mov [r13], rcx
-  lea rax, [rbp-80]
-  mov rcx, 8
-  shl rcx, 3
-  add rax, rcx
-  mov r14, rax
-  mov rcx, 7
-  mov [r14], rcx
-  lea rax, [rbp-80]
-  mov rcx, 9
-  shl rcx, 3
-  add rax, rcx
-  mov r15, rax
-  mov rcx, 53
-  mov [r15], rcx
-  mov rdi, str_1
-  mov eax, 0
-  call printf
-  mov [rbp-88], rax
-  mov rdi, str_2
-  mov eax, 0
-  call printf
-  mov [rbp-88], rax
+  mov rax, 300
+  mov [rbp-8], rax
+  mov rdi, 2400
+  call malloc
+  mov [rbp-24], rax
   xor eax, eax
-  mov [rbp-88], rax
-.for_cond_3:
-  cmp rax, 10
+  mov [rbp-16], rax
+.for_cond_1:
+  cmp rax, 300
   setl al
   movzx rax, al
   mov rbx, rax
   mov rax, rbx
   cmp rax, 0
-  jne .for_body_4
-  jmp .for_end_6
-.for_body_4:
-  lea rax, [rbp-80]
-  mov rcx, [rbp-88]
+  jne .for_body_2
+  jmp .for_end_4
+.for_body_2:
+  mov rax, [rbp-16]
+  imul rax, 7919
+  mov r12, rax
+  mov rax, r12
+  add rax, 997
+  mov r13, rax
+  mov rax, r13
+  cqo
+  mov rcx, 1000
+  idiv rcx
+  mov r14, rdx
+  mov rax, r14
+  inc rax
+  mov r15, rax
+  mov rax, [rbp-24]
+  mov rcx, [rbp-16]
   shl rcx, 3
   add rax, rcx
-  mov r12, rax
-  mov r13, [r12]
-  mov rdi, str_7
-  mov rsi, r13
-  mov eax, 0
-  call printf
-  mov [rbp-192], rax
-.for_update_5:
-  mov rax, [rbp-88]
+  mov rbx, rax
+  mov [rbx], r15
+.for_update_3:
+  mov rax, [rbp-16]
   inc rax
-  mov r14, rax
-  mov [rbp-88], r14
-  jmp .for_cond_3
-.for_end_6:
-  mov rdi, str_8
+  mov r12, rax
+  mov [rbp-16], r12
+  jmp .for_cond_1
+.for_end_4:
+  mov rdi, str_5
   mov eax, 0
   call printf
-  mov [rbp-192], rax
-  mov rax, 10
-  mov [rbp-192], rax
+  mov rdi, str_6
+  mov eax, 0
+  call printf
   xor eax, eax
-  mov [rbp-200], rax
-.for_cond_9:
-  mov rax, [rbp-192]
+  mov [rbp-16], rax
+.for_cond_7:
+  cmp rax, 10
+  setl al
+  movzx rax, al
+  mov r13, rax
+  mov rax, r13
+  cmp rax, 0
+  jne .for_body_8
+  jmp .for_end_10
+.for_body_8:
+  mov rax, [rbp-24]
+  mov rcx, [rbp-16]
+  shl rcx, 3
+  add rax, rcx
+  mov r14, rax
+  mov r15, [r14]
+  mov rdi, str_11
+  mov rsi, r15
+  mov eax, 0
+  call printf
+  mov [rbp-104], rax
+.for_update_9:
+  mov rax, [rbp-16]
+  inc rax
+  mov rbx, rax
+  mov [rbp-16], rbx
+  jmp .for_cond_7
+.for_end_10:
+  mov rdi, str_12
+  mov eax, 0
+  call printf
+  mov [rbp-104], rax
+  xor eax, eax
+  mov [rbp-104], rax
+.for_cond_13:
+  mov rax, [rbp-8]
   dec rax
+  mov r12, rax
+  mov rax, [rbp-104]
+  cmp rax, r12
+  setl al
+  movzx rax, al
+  mov r13, rax
+  mov rax, r13
+  cmp rax, 0
+  jne .for_body_14
+  jmp .for_end_16
+.for_body_14:
+  xor eax, eax
+  mov [rbp-160], rax
+.for_cond_17:
+  mov rax, [rbp-8]
+  dec rax
+  mov r14, rax
+  mov rax, r14
+  sub rax, qword [rbp-104]
   mov r15, rax
-  mov rax, [rbp-200]
+  mov rax, [rbp-160]
   cmp rax, r15
   setl al
   movzx rax, al
   mov rbx, rax
   mov rax, rbx
   cmp rax, 0
-  jne .for_body_10
-  jmp .for_end_12
-.for_body_10:
-  xor eax, eax
-  mov [rbp-256], rax
-.for_cond_13:
-  mov rax, [rbp-192]
-  dec rax
+  jne .for_body_18
+  jmp .for_end_20
+.for_body_18:
+  mov rax, [rbp-24]
+  mov rcx, [rbp-160]
+  shl rcx, 3
+  add rax, rcx
+  mov r12, rax
+  mov r13, [r12]
+  mov rax, [rbp-160]
+  inc rax
+  mov r14, rax
+  mov rax, [rbp-24]
+  mov rcx, r14
+  shl rcx, 3
+  add rax, rcx
+  mov r15, rax
+  mov rbx, [r15]
+  mov rax, r13
+  cmp rax, rbx
+  setg al
+  movzx rax, al
   mov r12, rax
   mov rax, r12
-  sub rax, qword [rbp-200]
+  cmp rax, 0
+  je .end_if_22
+.then_21:
+  mov rax, [rbp-24]
+  mov rcx, [rbp-160]
+  shl rcx, 3
+  add rax, rcx
+  mov r14, rax
+  mov r15, [r14]
+  mov [rbp-200], r15
+  mov rax, [rbp-160]
+  inc rax
   mov r13, rax
-  mov rax, [rbp-256]
-  cmp rax, r13
+  mov rax, [rbp-24]
+  mov rcx, r13
+  shl rcx, 3
+  add rax, rcx
+  mov rbx, rax
+  mov r12, [rbx]
+  mov rax, [rbp-24]
+  mov rcx, [rbp-160]
+  shl rcx, 3
+  add rax, rcx
+  mov r14, rax
+  mov [r14], r12
+  mov rax, [rbp-160]
+  inc rax
+  mov r15, rax
+  mov rax, [rbp-24]
+  mov rcx, r15
+  shl rcx, 3
+  add rax, rcx
+  mov r13, rax
+  mov rcx, [rbp-200]
+  mov [r13], rcx
+.end_if_22:
+.for_update_19:
+  mov rax, [rbp-160]
+  inc rax
+  mov rbx, rax
+  mov [rbp-160], rbx
+  jmp .for_cond_17
+.for_end_20:
+.for_update_15:
+  mov rax, [rbp-104]
+  inc rax
+  mov r12, rax
+  mov [rbp-104], r12
+  jmp .for_cond_13
+.for_end_16:
+  mov rdi, str_23
+  mov eax, 0
+  call printf
+  xor eax, eax
+  mov [rbp-16], rax
+.for_cond_24:
+  cmp rax, 10
   setl al
   movzx rax, al
   mov r14, rax
   mov rax, r14
   cmp rax, 0
-  jne .for_body_14
-  jmp .for_end_16
-.for_body_14:
-  lea rax, [rbp-80]
-  mov rcx, [rbp-256]
+  jne .for_body_25
+  jmp .for_end_27
+.for_body_25:
+  mov rax, [rbp-24]
+  mov rcx, [rbp-16]
   shl rcx, 3
   add rax, rcx
   mov r15, rax
-  mov rbx, [r15]
-  mov rax, [rbp-256]
-  inc rax
-  mov r12, rax
-  lea rax, [rbp-80]
-  mov rcx, r12
-  shl rcx, 3
-  add rax, rcx
-  mov r13, rax
-  mov r14, [r13]
-  mov rax, rbx
-  cmp rax, r14
-  setg al
-  movzx rax, al
-  mov r15, rax
-  mov rax, r15
-  cmp rax, 0
-  je .end_if_18
-.then_17:
-  lea rax, [rbp-80]
-  mov rcx, [rbp-256]
-  shl rcx, 3
-  add rax, rcx
-  mov r12, rax
-  mov r13, [r12]
-  mov [rbp-296], r13
-  mov rax, [rbp-256]
-  inc rax
-  mov rbx, rax
-  lea rax, [rbp-80]
-  mov rcx, rbx
-  shl rcx, 3
-  add rax, rcx
-  mov r14, rax
-  mov r15, [r14]
-  lea rax, [rbp-80]
-  mov rcx, [rbp-256]
-  shl rcx, 3
-  add rax, rcx
-  mov r12, rax
-  mov [r12], r15
-  mov rax, [rbp-256]
-  inc rax
-  mov r13, rax
-  lea rax, [rbp-80]
-  mov rcx, r13
-  shl rcx, 3
-  add rax, rcx
-  mov rbx, rax
-  mov rcx, [rbp-296]
-  mov [rbx], rcx
-.end_if_18:
-.for_update_15:
-  mov rax, [rbp-256]
-  inc rax
-  mov r14, rax
-  mov [rbp-256], r14
-  jmp .for_cond_13
-.for_end_16:
-.for_update_11:
-  mov rax, [rbp-200]
-  inc rax
-  mov r15, rax
-  mov [rbp-200], r15
-  jmp .for_cond_9
-.for_end_12:
-  mov rdi, str_19
+  mov r13, [r15]
+  mov rdi, str_28
+  mov rsi, r13
   mov eax, 0
   call printf
-  xor eax, eax
-  mov [rbp-88], rax
-.for_cond_20:
-  cmp rax, 10
+.for_update_26:
+  mov rax, [rbp-16]
+  inc rax
+  mov rbx, rax
+  mov [rbp-16], rbx
+  jmp .for_cond_24
+.for_end_27:
+  mov rdi, str_29
+  mov eax, 0
+  call printf
+  mov rdi, str_30
+  mov eax, 0
+  call printf
+  mov rax, 290
+  mov [rbp-16], rax
+.for_cond_31:
+  cmp rax, 300
   setl al
   movzx rax, al
   mov r12, rax
   mov rax, r12
   cmp rax, 0
-  jne .for_body_21
-  jmp .for_end_23
-.for_body_21:
-  lea rax, [rbp-80]
-  mov rcx, [rbp-88]
+  jne .for_body_32
+  jmp .for_end_34
+.for_body_32:
+  mov rax, [rbp-24]
+  mov rcx, [rbp-16]
+  shl rcx, 3
+  add rax, rcx
+  mov r14, rax
+  mov r15, [r14]
+  mov rdi, str_35
+  mov rsi, r15
+  mov eax, 0
+  call printf
+  mov [rbp-408], rax
+.for_update_33:
+  mov rax, [rbp-16]
+  inc rax
+  mov r13, rax
+  mov [rbp-16], r13
+  jmp .for_cond_31
+.for_end_34:
+  mov rdi, str_36
+  mov eax, 0
+  call printf
+  mov [rbp-408], rax
+  mov rax, 1
+  mov [rbp-408], rax
+  xor eax, eax
+  mov [rbp-16], rax
+.for_cond_37:
+  cmp rax, 299
+  setl al
+  movzx rax, al
+  mov rbx, rax
+  mov rax, rbx
+  cmp rax, 0
+  jne .for_body_38
+  jmp .for_end_40
+.for_body_38:
+  mov rax, [rbp-24]
+  mov rcx, [rbp-16]
+  shl rcx, 3
+  add rax, rcx
+  mov r12, rax
+  mov r14, [r12]
+  mov rax, [rbp-16]
+  inc rax
+  mov r15, rax
+  mov rax, [rbp-24]
+  mov rcx, r15
   shl rcx, 3
   add rax, rcx
   mov r13, rax
   mov rbx, [r13]
-  mov rdi, str_24
-  mov rsi, rbx
-  mov eax, 0
-  call printf
-.for_update_22:
-  mov rax, [rbp-88]
+  mov rax, r14
+  cmp rax, rbx
+  setg al
+  movzx rax, al
+  mov r12, rax
+  mov rax, r12
+  cmp rax, 0
+  je .end_if_42
+.then_41:
+  xor eax, eax
+  mov [rbp-408], rax
+.end_if_42:
+.for_update_39:
+  mov rax, [rbp-16]
   inc rax
-  mov r14, rax
-  mov [rbp-88], r14
-  jmp .for_cond_20
-.for_end_23:
-  mov rdi, str_25
+  mov r15, rax
+  mov [rbp-16], r15
+  jmp .for_cond_37
+.for_end_40:
+  mov rax, [rbp-408]
+  cmp rax, 1
+  sete al
+  movzx rax, al
+  mov r13, rax
+  mov rax, r13
+  cmp rax, 0
+  je .end_if_44
+.then_43:
+  mov rdi, str_45
   mov eax, 0
   call printf
-  mov [rbp-88], rax
-  mov rdi, str_26
-  mov eax, 0
-  call printf
+.end_if_44:
+  mov rdi, [rbp-24]
+  call free
+  mov [rbp-8], rax
+  mov rdi, [rbp-24]
+  call free
   xor eax, eax
   pop r15
   pop r14
@@ -291,6 +360,8 @@ main:
   pop rbp
   ret
 .main_epilogue_fallback:
+  mov rdi, [rbp-24]
+  call free
   pop r15
   pop r14
   pop r13
@@ -308,11 +379,14 @@ _start:
   syscall
 
 section .data
-str_1: db `Bubble Sort\n`, 0
-str_2: db `Before: `, 0
-str_7: db `%d `, 0
-str_8: db `\n`, 0
-str_19: db `After:  `, 0
-str_24: db `%d `, 0
-str_25: db `\n`, 0
-str_26: db `Bubble sort complete!\n`, 0
+str_5: db `Bubble Sort (n=300, heap-allocated)\n`, 0
+str_6: db `Before [0..9]: `, 0
+str_11: db `%d `, 0
+str_12: db `\n`, 0
+str_23: db `After  [0..9]: `, 0
+str_28: db `%d `, 0
+str_29: db `\n`, 0
+str_30: db `After  [290..299]: `, 0
+str_35: db `%d `, 0
+str_36: db `\n`, 0
+str_45: db `Sorted correctly!\n`, 0

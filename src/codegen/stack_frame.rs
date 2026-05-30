@@ -175,10 +175,14 @@ fn scalar_operands(inst: &IRInstruction) -> Vec<Operand> {
         IRInstruction::Store { address, source } => {
             v.push(address.clone()); v.push(source.clone());
         }
-        IRInstruction::GetElementPtr { result, offset, .. } => {
-            // NOTE: `base` intentionally excluded — it is an array address,
-            // already handled by allocate_array in Phase 1.
-            v.push(result.clone()); v.push(offset.clone());
+        IRInstruction::GetElementPtr { result, base, offset } => {
+            // Include `base` so heap array pointer slots are never reused.
+            // For stack arrays, base is already in self.offsets (Phase 1
+            // allocate_array) and will be skipped by the contains_key guard.
+            // For heap array pointers spilled to stack, this extends their
+            // live interval through all array accesses, preventing the greedy
+            // slot reuse engine from overwriting the malloc pointer.
+            v.push(result.clone()); v.push(base.clone()); v.push(offset.clone());
         }
         IRInstruction::JumpIfTrue  { condition, .. }
         | IRInstruction::JumpIfFalse { condition, .. } => {

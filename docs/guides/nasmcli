@@ -8,3 +8,4 @@
 
 # keep intermediate .asm and .o
 ./run.sh examples/bubble_sort.src - --keep
+./run.sh examples/quick_sort.src - --keep

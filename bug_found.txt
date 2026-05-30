@@ -1,0 +1,155 @@
+================================================================================
+BUG REPORT — Heap array pointer corrupted by liveness-aware stack slot reuse
+================================================================================
+Date:     2026-05-29
+Severity: HIGH — causes crash (double free / invalid pointer)
+Status:   OPEN
+
+────────────────────────────────────────────────────────────────────────────────
+SYMPTOM
+────────────────────────────────────────────────────────────────────────────────
+Calling free(arr) on a heap-allocated array crashes with:
+    free(): invalid pointer
+    double free or corruption (!prev)
+
+Reproducer:
+    int arr[300];
+    // ... use arr[i] repeatedly ...
+    free(arr);   ← crash
+
+────────────────────────────────────────────────────────────────────────────────
+ROOT CAUSE
+────────────────────────────────────────────────────────────────────────────────
+
+DEFECT A — Wrong live interval for heap array pointer variable
+  File:  src/codegen/stack_frame.rs :: scalar_operands() ~line 178
+
+  GetElementPtr { result, base, offset } is handled as:
+      v.push(result.clone());
+      v.push(offset.clone());
+      // base intentionally excluded  ← THE BUG
+
+  The `base` (e.g., Var "arr") is excluded so stack-based arrays are not
+  double-counted (Phase 1 already gives them a contiguous block).
+  BUT for HEAP arrays, `base` holds an 8-byte malloc pointer — it IS a
+  scalar and MUST be tracked as live through every array access.
+
+  Because `base` is excluded, the liveness interval for Var "arr" in Phase 2
+  is computed only from the single Param instruction at free(arr).
+  Interval appears tiny: e.g., [inst 850, 850].
+
+DEFECT B — Slot reuse overwrites the malloc pointer
+  File:  src/codegen/x86_generator.rs :: Alloca handler
+
+  Alloca codegen runs at function entry and stores the malloc pointer:
+      mov rdi, 2400
+      call malloc
+      mov [rbp-24], rax   ← arr's slot = correct malloc pointer
+
+  But because arr's live interval is [850, 850], the greedy reuse engine
+  considers [rbp-24] expired immediately after instruction 0.
+  At instruction ~100 another temp gets [rbp-24]:
+      mov [rbp-24], <something_else>   ← slot overwritten with garbage
+
+  When free(arr) runs:
+      mov rdi, [rbp-24]   ← loads garbage, not malloc pointer
+      call free           ← crash
+
+NOTE: The bug is SILENT when arr is in a physical register (registers are
+never reused by the slot engine). It only manifests when arr is SPILLED.
+
+────────────────────────────────────────────────────────────────────────────────
+EXACT CALL CHAIN
+────────────────────────────────────────────────────────────────────────────────
+  generate_function()
+    └─ allocate_with_liveness(instructions, reg_keys, heap_arrays)
+         Phase 1: arr in heap_arrays → skip allocate_array(arr)     [OK]
+         Phase 2: scalar_operands(GetElementPtr{base=arr,...})
+                      returns [result, offset]    ← arr MISSING
+                  arr only seen at Param → interval = [850, 850]
+         Phase 3: arr gets slot [rbp-24]
+                  [rbp-24] freed back to pool at inst 850+1
+                  temp at inst ~100 gets [rbp-24] → OVERWRITES malloc ptr
+
+  generate_instruction(Alloca{arr,300}):
+      call malloc → mov [rbp-24], rax   ← correct ptr, written ONCE
+
+  (subsequent temps overwrite [rbp-24] with unrelated values)
+
+  free(arr):  load_operand("rdi", arr) → mov rdi, [rbp-24]  ← GARBAGE
+
+────────────────────────────────────────────────────────────────────────────────
+FIX (one line change)
+────────────────────────────────────────────────────────────────────────────────
+  Include `base` in scalar_operands() for GetElementPtr.
+
+  Safe because:
+  • Stack arrays: base key already in self.offsets (Phase 1)
+    → Phase 2 skips via contains_key guard.         ← no change
+  • Heap arrays in register: base key in reg_keys
+    → Phase 2 skips via reg_keys guard.              ← no change
+  • Heap arrays SPILLED: base now seen at every GEP
+    → live interval spans full array usage
+    → slot is never reused while array is alive.     ← BUG FIXED
+
+  File: src/codegen/stack_frame.rs :: scalar_operands()
+  BEFORE:
+      IRInstruction::GetElementPtr { result, offset, .. } => {
+          // base intentionally excluded
+          v.push(result.clone()); v.push(offset.clone());
+      }
+  AFTER:
+      IRInstruction::GetElementPtr { result, base, offset } => {
+          v.push(result.clone()); v.push(base.clone()); v.push(offset.clone());
+      }
+
+────────────────────────────────────────────────────────────────────────────────
+SECONDARY ISSUES (lower priority, not fixed here)
+────────────────────────────────────────────────────────────────────────────────
+1. sub rsp inflated (~1300B vs ~120B expected) — SSA version explosion from
+   loop-peeling + heavy PHI propagation creates 134 unique temp IDs.
+   Fix: coalesce SSA versions of the same variable before slot allocation.
+
+2. Alloca malloc called inside .func_main: body (after callee-save pushes).
+   Currently harmless since allocator uses only callee-saved regs, but
+   correctness relies on that assumption.
+
+================================================================================
+END OF REPORT
+================================================================================
+
+================================================================================
+ADDENDUM — Second root cause found during investigation
+================================================================================
+
+DEFECT C — Auto-free in Return handler and epilogue_fallback (DOUBLE FREE)
+  Files: src/codegen/x86_generator.rs
+           - generate_instruction() :: IRInstruction::Return arm  (~line 420)
+           - generate_function()   :: epilogue_fallback block    (~line 173)
+
+  An earlier version of the code automatically emitted `call free` for every
+  heap array at every Return instruction AND in the epilogue_fallback block.
+  When the programmer also calls free() explicitly in their source code, this
+  results in a double-free.
+
+  Return handler (was):
+      let ops = self.heap_arrays_ops.clone();
+      for op in ops {
+          load_ptr = load_operand("rdi", op);
+          code += "call free\n";     ← auto-free #1
+      }
+      // ... then return value ...
+
+  Epilogue fallback (was):
+      for op in heap_arrays_ops {
+          code += "call free\n";     ← auto-free #2 (if no explicit return)
+      }
+
+  Combined with explicit free(arr) in source → 2-3 calls to free per pointer.
+  glibc detects this as "double free or corruption" and aborts.
+
+  FIX: Removed all auto-free logic from both locations.
+       Memory management is now entirely the programmer's responsibility.
+       Explicit free(arr) in source code is the only free that runs.
+
+STATUS: FIXED in both defects (C in x86_generator.rs, A in stack_frame.rs)

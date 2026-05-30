@@ -324,8 +324,9 @@ impl SemanticAnalyzer {
 
                 if let Some(s_ty) = symbol_type {
                     if let Type::Function { params, ret } = s_ty {
-                        if callee == "printf" || callee == "scanf" {
-                            // Skip parameter validation for variadic standard functions
+                        if callee == "printf" || callee == "scanf" || callee == "free" || callee == "malloc" {
+                            // Skip parameter validation for variadic / pointer-accepting functions.
+                            // malloc and free accept both int and int[] at the ABI level.
                         } else if params.len() != arg_types.len() {
                             self.report_error(position, format!("Function '{}' requires {} arguments, but {} were provided", callee, params.len(), arg_types.len()));
                         } else {
