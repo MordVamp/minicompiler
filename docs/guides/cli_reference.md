@@ -231,7 +231,7 @@ Sequentially prints the output of `lex`, `parse`, `check --verbose`, and `ir`. T
 Автоматизирует процесс сборки: транслирует `.src` в `.asm` через `minicompiler`, собирает через `nasm`, линкует через `gcc` и сразу запускает бинарник. 
 
 ```bash
-cargo run -- run <FILE> [BIN_NAME] [--keep]
+cargo run -- run <FILE> [BIN_NAME] [--keep] [--time] [--perf]
 ```
 
 | Аргумент / Флаг | Описание |
@@ -239,6 +239,8 @@ cargo run -- run <FILE> [BIN_NAME] [--keep]
 | `<FILE>` | Путь к исходному `.src` файлу (Обязательный) |
 | `[BIN_NAME]` | Имя итогового бинарного файла (Опционально) |
 | `--keep` | Сохранить сгенерированные `.asm` и `.o` файлы после линковки |
+| `--time` | Замерить время выполнения сгенерированного бинарника (wall-clock time) |
+| `--perf` | Собрать аппаратные метрики производительности (`perf stat`) (только для Linux) |
 
 **Примеры (через внутренний CLI):**
 ```bash
