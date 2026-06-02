@@ -47,7 +47,13 @@ need gcc   "sudo apt install gcc"
 
 # ── step 1: compile .src → .asm ──────────────────────────────────────────────
 echo "🔨 [1/4] Compiling  ${SRC}  →  ${ASM_FILE}"
-cargo run --quiet --bin minicompiler -- compile -i "$SRC" -o "$ASM_FILE"
+if [[ -f "./minicompiler.exe" ]]; then
+    ./minicompiler.exe compile -i "$SRC" -o "$ASM_FILE"
+elif [[ -f "./minicompiler" ]]; then
+    ./minicompiler compile -i "$SRC" -o "$ASM_FILE"
+else
+    cargo run --quiet --bin minicompiler -- compile -i "$SRC" -o "$ASM_FILE"
+fi
 
 # ── step 2: assemble .asm → .o ───────────────────────────────────────────────
 echo "🔩 [2/4] Assembling ${ASM_FILE}  →  ${OBJ_FILE}"
