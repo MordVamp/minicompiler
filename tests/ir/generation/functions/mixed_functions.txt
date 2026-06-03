@@ -1,15 +1,21 @@
 entry:
 
 func_get_square:
+  ; .loc 2 5
+  ; .loc 2 5
   t1_1 = MUL n_0, n_0
   RETURN t1_1
 
 func_main:
+  ; .loc 10 5
+  ; .loc 10 5
   PARAM 4
   t2_1 = CALL get_square, 1
   s_1 = MOVE t2_1
+  ; .loc 11 5
   PARAM s_1
   t3_1 = CALL print_result, 1
 
 func_print_result:
+  ; .loc 7 1
 

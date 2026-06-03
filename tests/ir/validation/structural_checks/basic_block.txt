@@ -1,5 +1,7 @@
 entry:
 
 func_main:
+  ; .loc 1 21
+  ; .loc 1 21
   x_1 = MOVE 1
 

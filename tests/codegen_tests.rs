@@ -3,7 +3,7 @@ use minicompiler::parser::Parser;
 use minicompiler::semantic::analyzer::SemanticAnalyzer;
 use minicompiler::ir::ir_generator::IRGenerator;
 use minicompiler::ir::ssa_constructor::SSAConstructor;
-use minicompiler::ir::ir_instructions::{IRInstruction, Operand};
+use minicompiler::ir::ir_instructions::IRInstruction;
 use minicompiler::codegen::X86Generator;
 
 fn compile(source: &str) -> String {

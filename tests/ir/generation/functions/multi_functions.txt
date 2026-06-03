@@ -1,20 +1,27 @@
 entry:
 
 func_add:
+  ; .loc 2 5
+  ; .loc 2 5
   t1_1 = ADD a_0, b_0
   RETURN t1_1
 
 func_main:
+  ; .loc 10 5
+  ; .loc 10 5
   PARAM 5
   PARAM 10
   t3_1 = CALL add, 2
   x_1 = MOVE t3_1
+  ; .loc 11 5
   PARAM x_1
   PARAM 2
   t4_1 = CALL mul, 2
   y_1 = MOVE t4_1
 
 func_mul:
+  ; .loc 6 5
+  ; .loc 6 5
   t2_1 = MUL a_0, b_0
   RETURN t2_1
 

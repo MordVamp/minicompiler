@@ -1,8 +1,12 @@
 entry:
 
 func_f:
+  ; .loc 1 18
+  ; .loc 1 18
   a_1 = MOVE 2
+  ; .loc 1 29
   b_1 = MOVE 3
+  ; .loc 1 40
   t1_1 = ADD a_1, b_1
   c_1 = MOVE t1_1
 

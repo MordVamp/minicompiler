@@ -1,12 +1,17 @@
 entry:
 
 func_log_event:
+  ; .loc 7 1
 
 func_main:
+  ; .loc 10 5
+  ; .loc 10 5
   PARAM 42
   t1_1 = CALL print_val, 1
+  ; .loc 11 5
   PARAM 1
   t2_1 = CALL log_event, 1
 
 func_print_val:
+  ; .loc 3 1
 

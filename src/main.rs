@@ -1,5 +1,4 @@
 use anyhow::Result;
-use minicompiler::codegen::optimizer::PeepholeOptimizer;
 use clap::{Parser as ClapParser, Subcommand, ValueEnum};
 use minicompiler::lexer::{Scanner, TokenType};
 use minicompiler::parser::Parser;

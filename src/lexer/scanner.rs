@@ -423,7 +423,7 @@ impl<'a> Scanner<'a> {
             token_type,
             &self.source[self.start..self.current],
             self.line,
-            self.column - (self.current - self.start),
+            self.column.saturating_sub(self.current - self.start).max(1),
         )
     }
 
@@ -432,7 +432,7 @@ impl<'a> Scanner<'a> {
             token_type,
             &self.source[self.start..self.current],
             self.line,
-            self.column - (self.current - self.start),
+            self.column.saturating_sub(self.current - self.start).max(1),
             literal,
         )
     }
@@ -441,7 +441,7 @@ impl<'a> Scanner<'a> {
         Token::error(
             format!("{}", err),
             self.line,
-            self.column - (self.current - self.start),
+            self.column.saturating_sub(self.current - self.start).max(1),
         )
     }
 

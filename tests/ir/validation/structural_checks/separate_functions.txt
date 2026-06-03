@@ -1,6 +1,8 @@
 entry:
 
 func_bar:
+  ; .loc 1 41
 
 func_foo:
+  ; .loc 1 20
 

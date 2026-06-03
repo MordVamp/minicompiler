@@ -1,4 +1,6 @@
 else_3:
+  ; .loc 1 62
+  ; .loc 1 62
   y_3 = MOVE 2
   JUMP end_if_2
 
@@ -10,11 +12,16 @@ end_if_2:
 entry:
 
 func_f:
+  ; .loc 1 18
+  ; .loc 1 18
   x_1 = MOVE 5
+  ; .loc 1 32
   t1_1 = GREATER x_1, 3
   JUMP_IF_NOT t1_1 else_3
 
 then_1:
+  ; .loc 1 42
+  ; .loc 1 42
   y_1 = MOVE 1
   JUMP end_if_2
 

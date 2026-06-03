@@ -112,7 +112,7 @@ impl IROptimizer {
                             for c_inst in callee_insts {
                                 let mut cloned = c_inst.clone();
                                 
-                                let mut map_op = |op: &mut Operand| {
+                                let map_op = |op: &mut Operand| {
                                     if let Some(repl) = replace_map.get(op) {
                                         *op = repl.clone();
                                     } else {

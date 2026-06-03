@@ -150,7 +150,7 @@ impl SemanticAnalyzer {
                     self.report_error(position, e);
                 }
             }
-            DeclarationNode::ArrayDecl { var_type, name, size, initializer, position } => {
+            DeclarationNode::ArrayDecl { var_type, name, size, initializer: _, position } => {
                 let declared_ty = Type::from_string(&format!("{}[]", var_type));
                 
                 if let Some(sz) = size {

@@ -1,5 +1,7 @@
 entry:
 
 func_f:
+  ; .loc 1 17
+  ; .loc 1 17
   RETURN 42
 

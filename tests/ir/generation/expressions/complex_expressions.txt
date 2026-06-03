@@ -1,9 +1,14 @@
 entry:
 
 func_main:
+  ; .loc 2 5
+  ; .loc 2 5
   a_1 = MOVE 10
+  ; .loc 3 5
   b_1 = MOVE 20
+  ; .loc 4 5
   c_1 = MOVE 30
+  ; .loc 5 5
   t1_1 = ADD a_1, b_1
   t2_1 = MUL t1_1, c_1
   t3_1 = DIV b_1, a_1

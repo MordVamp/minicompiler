@@ -1,9 +1,13 @@
 entry:
 
 func_add:
+  ; .loc 1 31
+  ; .loc 1 31
   RETURN a_0
 
 func_main:
+  ; .loc 2 21
+  ; .loc 2 21
   PARAM 1
   PARAM 2
   t1_1 = CALL add, 2
